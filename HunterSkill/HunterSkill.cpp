@@ -56,6 +56,13 @@ int main( )
     options::config( );
     impl::d3d11::init( );
     impl::d3d11::set_overlay( overgay );
+
+    while ( true )
+    {
+        game::manager::i( )->update_entities( );
+        Sleep( 500 );
+    }
+
     return 0;
 }
 

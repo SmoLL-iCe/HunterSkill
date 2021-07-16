@@ -30,3 +30,15 @@
 *.exe
 *.out
 *.app
+*.ipch
+*.db
+*.db-shm
+*.db-wal
+*.opendb
+.vs/HunterSkill/v16/.suo
+*.recipe
+*.iobj
+*.ipdb
+*.log
+*.tlog
+*.pdb
