@@ -75,8 +75,8 @@ bool game::manager::w2s( vec3 origin, vec3& out )
 	auto y = D3DXVec3Dot( &up,		&origin ) + temp._24;
 	auto x = D3DXVec3Dot( &right,	&origin ) + temp._14;
 
-	out.x = ( impl::d3d11::screen( )[ 0 ] / 2 ) * ( 1 + ( x / w ) );
-	out.y = ( impl::d3d11::screen( )[ 1 ] / 2 ) * ( 1 - ( y / w ) );
+	out.x = ( impl::screen( )[ 0 ] / 2 ) * ( 1 + ( x / w ) );
+	out.y = ( impl::screen( )[ 1 ] / 2 ) * ( 1 - ( y / w ) );
 
 	return true;
 }

@@ -359,7 +359,7 @@ kiero::Status::Enum kiero::init(RenderType::Enum _renderType)
 #if KIERO_INCLUDE_D3D12
 				HMODULE libDXGI;
 				HMODULE libD3D12;
-				if ((libDXGI = ::GetModuleHandle(KIERO_TEXT("dxgi.dll"))) == NULL || (libD3D12 = ::GetModuleHandle(KIERO_TEXT("d3d12.dll"))) == NULL)
+				if ((libDXGI = ::LoadLibrary(KIERO_TEXT("dxgi.dll"))) == NULL || (libD3D12 = ::LoadLibrary(KIERO_TEXT("d3d12.dll"))) == NULL)
 				{
 					::DestroyWindow(window);
 					::UnregisterClass(windowClass.lpszClassName, windowClass.hInstance);
@@ -682,7 +682,7 @@ kiero::Status::Enum kiero::bind(uint16_t _index, void** _original, void* _functi
 
 	assert(_original != NULL && _function != NULL);
 
-	if (g_renderType != RenderType::None)
+	//if (g_renderType != RenderType::None)
 	{
 #if KIERO_USE_MINHOOK
 		void* target = (void*)g_methodsTable[_index];

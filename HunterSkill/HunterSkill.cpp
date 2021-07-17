@@ -1,6 +1,7 @@
 
 #include "header.h"
 #include "interface/d3d11_impl.h"
+#include "interface/d3d12_impl.h"
 #include "interface/win32_impl.h"
 
 #include "game/shared_config.h"
@@ -8,9 +9,12 @@
 #include "utils/mem.h"
 #include <sstream>
 #include "thirdparty/imgui/imgui.h"
+#include "game/hooks.h"
 
 void __stdcall overgay( )
 {
+    if ( *reinterpret_cast<uint32_t*>( 0x145073B3C ) != 0xFFFFFFFF )
+        return;
     game::manager::i( )->entity_callback(  
     	[ ] ( game::c_entity* entity ) -> void
     	{
@@ -52,15 +56,23 @@ int main( )
     
     open_console( );
 
-
     options::config( );
-    impl::d3d11::init( );
-    impl::d3d11::set_overlay( overgay );
+
+    //impl::d3d11::init( );
+
+    hooks::init( );
+
+    impl::d3d12::init( );
+
+    impl::d3d12::set_overlay( overgay );
 
     while ( true )
     {
-        game::manager::i( )->update_entities( );
         Sleep( 500 );
+        if ( *reinterpret_cast<uint32_t*>( 0x145073B3C ) != 0xFFFFFFFF )
+            continue;
+        game::manager::i( )->update_entities( );
+   
     }
 
     return 0;

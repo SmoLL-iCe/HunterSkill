@@ -65,7 +65,7 @@
     <ClInclude Include="interface\d3d11_impl.h">
       <Filter>interface</Filter>
     </ClInclude>
-    <ClInclude Include="interface\shared.h">
+    <ClInclude Include="interface\menu.h">
       <Filter>interface</Filter>
     </ClInclude>
     <ClInclude Include="interface\win32_impl.h">
@@ -116,6 +116,15 @@
     <ClInclude Include="game\shared_config.h">
       <Filter>game</Filter>
     </ClInclude>
+    <ClInclude Include="interface\d3d12_impl.h">
+      <Filter>interface</Filter>
+    </ClInclude>
+    <ClInclude Include="interface\steam.h">
+      <Filter>interface</Filter>
+    </ClInclude>
+    <ClInclude Include="game\hooks.h">
+      <Filter>game</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="HunterSkill.cpp">
@@ -142,7 +151,7 @@
     <ClCompile Include="interface\d3d11_impl.cpp">
       <Filter>interface</Filter>
     </ClCompile>
-    <ClCompile Include="interface\shared.cpp">
+    <ClCompile Include="interface\menu.cpp">
       <Filter>interface</Filter>
     </ClCompile>
     <ClCompile Include="interface\win32_impl.cpp">
@@ -179,6 +188,15 @@
       <Filter>game</Filter>
     </ClCompile>
     <ClCompile Include="game\shared_config.cpp">
+      <Filter>game</Filter>
+    </ClCompile>
+    <ClCompile Include="interface\d3d12_impl.cpp">
+      <Filter>interface</Filter>
+    </ClCompile>
+    <ClCompile Include="interface\steam.cpp">
+      <Filter>interface</Filter>
+    </ClCompile>
+    <ClCompile Include="game\hooks.cpp">
       <Filter>game</Filter>
     </ClCompile>
   </ItemGroup>

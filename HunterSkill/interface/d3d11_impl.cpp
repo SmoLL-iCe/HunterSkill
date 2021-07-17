@@ -7,6 +7,7 @@
 #include "../thirdparty/imgui/imgui_impl_win32.h"
 #include "../thirdparty/imgui/imgui_impl_dx11.h"
 #include "../utils/mem.h"
+#include "steam.h"
 
 typedef long( __stdcall* Present )( IDXGISwapChain*, UINT, UINT );
 static Present oPresent = NULL;
@@ -44,6 +45,9 @@ long __stdcall hkPresent11( IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT 
 		UINT vps = 1;
 		context->RSGetViewports( &vps, &viewport );
 
+		impl::screen( )[ 0 ] = viewport.Width;
+		impl::screen( )[ 1 ] = viewport.Height;
+
 		init = true;
 	}
 
@@ -51,7 +55,7 @@ long __stdcall hkPresent11( IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT 
 	ImGui_ImplWin32_NewFrame( );
 	ImGui::NewFrame( );
 
-	impl::showExampleWindow( "D3D11" );
+	impl::show_menu( );
 
 	ImGui::EndFrame( );
 
@@ -65,46 +69,15 @@ long __stdcall hkPresent11( IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT 
 	return oPresent( pSwapChain, SyncInterval, Flags );
 }
 
-float* impl::d3d11::screen( )
-{
-	return reinterpret_cast<float*>( &viewport.Width );
-}
-
-/*
-gameoverlayrenderer64.dll+88E7E - 48 FF 25 93571000     - jmp qword ptr [gameoverlayrenderer64.dll+18E618]
-gameoverlayrenderer64.dll+88E85 - 48 89 5C 24 30        - mov [rsp+30],rbx
-gameoverlayrenderer64.dll+88E8A - 48 8D 0D AF4F1000     - lea rcx,[gameoverlayrenderer64.dll+18DE40]
-*/
-uint8_t shell_code[ ] = {
-	//  gameoverlayrenderer64.dll+88E7E =>	jmp qword ptr [gameoverlayrenderer64.dll+18E618]
-	0x48, 0xFF, 0x25, 0xCC, 0xCC, 0xCC, 0xCC,
-	//  gameoverlayrenderer64.dll+88E85 =>	mov [rsp+30],rbx
-	0x48, 0x89, 0x5C, 0x24, 0x30,
-	//  gameoverlayrenderer64.dll+88E8A =>	lea rcx,[gameoverlayrenderer64.dll+18DE40]
-	0x48, 0x8D, 0x0D
-};
-
 void impl::d3d11::init( )
 {
 
-	HMODULE gameoverlayrenderer64 = nullptr;
-	while ( !gameoverlayrenderer64 )
-	{
-		gameoverlayrenderer64 = GetModuleHandle( L"gameoverlayrenderer64.dll" );
-	}
+	auto ptr = steam_overlay::get_ptr( );
 
-	auto found = mem::find_pattern( shell_code, sizeof shell_code, gameoverlayrenderer64 );
-	
-	if ( !found ) return;
-
-	auto ptr = reinterpret_cast<uintptr_t*>( found + *r_cast<uint32_t*>( &found[ 3 ] ) + 7 );
-
-	while ( !*ptr )
-	{
-		Sleep( 100 );
-	}
 	oPresent = reinterpret_cast<decltype( oPresent )>( *ptr );
+
 	*ptr = uintptr_t( hkPresent11 );
+
 
 
 	//auto status = kiero::init( kiero::RenderType::D3D11 );
