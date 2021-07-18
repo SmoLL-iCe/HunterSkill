@@ -110,4 +110,13 @@ namespace game
 		}
 	};
 
+	struct s_entity
+	{
+		bool is_boss = false;
+		float health;
+		float max_health;
+		vec3 pos;
+		c_entity* ptr;
+	};
+
 }

@@ -6,10 +6,10 @@
 #include "../interface/d3d11_impl.h"
 #include <vector>
 
-bool called_callback = false;
-bool update_list = false;
+//bool called_callback = false;
+//bool update_list = false;
 
-std::vector<game::c_entity*> entities{ };
+//std::vector<game::c_entity*> entities{ };
 
 game::manager* c_manager = nullptr;
 
@@ -84,24 +84,21 @@ bool game::manager::w2s( vec3 origin, vec3& out )
 void game::manager::entity_callback( entity_cb func )
 {
 	if ( !func ) return;
-
-	if ( update_list )
-		return;
-
-	for ( auto * entity : entities )
+	if ( updated_list )
 	{
-		if ( update_list )
-			return;
-
-		if ( !mem::is_valid_read( entity ) )
-			continue;
-		func( entity );
+		entities.clear( );
+		entities = new_entities;
+		updated_list = false;
 	}
-
+	for ( auto &entity : entities )
+		func( entity );
 }
 
 void game::manager::update_entities( )
 {
+	if ( updated_list )
+		return;
+
 	if ( !m_instance_mgr ) return;
 
 	auto total_entity	= *r_cast<uint32_t*>( m_instance_mgr + options::reversed::i( )->offset.entity_max );
@@ -114,8 +111,7 @@ void game::manager::update_entities( )
 	if ( !entities_entry )
 		return;
 
-	std::vector<game::c_entity*> new_entities{ };
-
+	new_entities.clear( );
 	for ( auto i = 0UL; i < total_entity; ++i )
 	{
 		auto ptr = entities_entry[ i ];
@@ -127,9 +123,13 @@ void game::manager::update_entities( )
 			continue;
 
 		if (!(	*r_cast< uint32_t*>( ptr + 0xC ) == 8 &&
+
 				*r_cast<  uint8_t*>( ptr + 0x14 ) & 1 &&
+
 			!( ~*r_cast<uintptr_t*>( m_instance_mgr + options::reversed::i( )->offset.mgr_flags1 ) & 
+
 				*r_cast<uintptr_t*>( ptr + 0x40 ) ) ))
+
 			continue;
 
 		if ( *r_cast<uint8_t*>( ptr + 0x561 ) )
@@ -138,20 +138,33 @@ void game::manager::update_entities( )
 		if ( *r_cast<uintptr_t*>( ptr + 0x950 ) == 0ui64 )
 			continue;
 
-		auto sub = *r_cast<void**>( ptr + 0x7670 );
+		auto sub = *r_cast<uintptr_t*>( ptr + 0x7670 );
 
-		if ( sub == nullptr || !mem::is_valid_read( sub ) )
+		if ( sub == 0 || !mem::is_valid_read( sub ) )
 			continue;
 
-		new_entities.push_back( r_cast<game::c_entity*>( ptr ) );
+		auto entity = r_cast<c_entity*>( ptr );
+
+		new_entities.push_back( {
+
+				entity->is_boss( ),
+
+				*r_cast<float*>( sub + 0x64 ),
+
+				*r_cast<float*>( sub + 0x60 ),
+
+				entity->get_pos( ),
+
+				entity
+			} );
 	}
 
-
-	while ( called_callback ) //race condition
-		Sleep( 0 );
-	update_list = true;
-	entities.clear();
-	entities = new_entities;
-	update_list = false;
+	updated_list = true;
+	//while ( called_callback ) //race condition
+	//	Sleep( 0 );
+	//update_list = true;
+	//entities.clear();
+	//entities = new_entities;
+	//update_list = false;
 
 }

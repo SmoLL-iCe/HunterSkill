@@ -16,21 +16,21 @@ void __stdcall overgay( )
     if ( *reinterpret_cast<uint32_t*>( 0x145073B3C ) != 0xFFFFFFFF )
         return;
     game::manager::i( )->entity_callback(  
-    	[ ] ( game::c_entity* entity ) -> void
+    	[ ] ( game::s_entity entity ) -> void
     	{
     		
-    		if ( !entity->is_boss() )
+    		if ( !entity.is_boss )
     			return;
-    
-    		auto pos = entity->get_pos( );
 
     		vec3 out;
 
-    		if ( !game::manager::i( )->w2s( pos, out ) )
+    		if ( !game::manager::i( )->w2s( entity.pos, out ) )
     			return;
 
+            auto percent_hp = ( entity.health / entity.max_health ) * 100.f;
+
     		std::ostringstream ss;
-    		ss << "BOSS 0x" << std::hex << std::uppercase << entity << ", POS[ X: " << std::dec << pos.x << ", Y: " << pos.y << ", Z: " << pos.z << " ]";
+    		ss << "BOSS 0x" << std::hex << std::uppercase << entity.ptr << "\nPOS[ X: " << std::dec << entity.pos.x << ", Y: " << entity.pos.y << ", Z: " << entity.pos.z << " ]\nHP: " << percent_hp;
 
     		//printf( "%s\n", ss.str().c_str( ) );
     		ImGui::GetOverlayDrawList( )->AddText( ImVec2( out.x, out.y ),
@@ -50,17 +50,22 @@ void open_console( )
     SetConsoleTitleA( "" );
 }
 
-
 int main( )
 {
     
     open_console( );
 
+    Sleep( 1000 );
+
     options::config( );
 
-    //impl::d3d11::init( );
-
     hooks::init( );
+
+    auto sound = r_cast<bool*>( 0x1450A4998 );
+    while ( !*sound )
+    {
+        Sleep( 100 );
+    }
 
     impl::d3d12::init( );
 
@@ -68,9 +73,10 @@ int main( )
 
     while ( true )
     {
-        Sleep( 500 );
+        Sleep( 100 );
         if ( *reinterpret_cast<uint32_t*>( 0x145073B3C ) != 0xFFFFFFFF )
             continue;
+
         game::manager::i( )->update_entities( );
    
     }

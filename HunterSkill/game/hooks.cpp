@@ -5,10 +5,38 @@
 #include "../thirdparty/minhook/include/MinHook.h"
 #include "../utils/utils.h"
 
+template <typename A1, typename A2>
+inline bool hook( A1 detour, A2& r_original )
+{
+	static auto once = true;
+	if ( once )
+		once = !( MH_Initialize( ) == MH_OK );
+	auto* p_original = reinterpret_cast<void*>( r_original );
+	auto mh_status = MH_CreateHook( p_original, reinterpret_cast<void*>( detour ), reinterpret_cast<void**>( &r_original ) );
+	if ( mh_status != MH_OK )
+		return false;
+	mh_status = MH_EnableHook( p_original );
+	return ( mh_status == MH_OK );
+}
+
+template <typename A1>
+inline bool rem_hook( A1 r_original )
+{
+	auto* p_original = reinterpret_cast<void*>( r_original );
+	const auto mh_status = MH_DisableHook( p_original );
+	return ( mh_status == MH_OK );
+}
+
 void __fastcall ReportProblem( DWORD code, const char* str )
 {
-	if ( !code || code == 0x887A0001 )
+	if ( !code )
 		return;
+
+	if ( code == 0x887A0001 )
+	{
+
+		return;	
+	}
 
 	printf( "report problem, code: 0x%X\n", code );
 
@@ -26,19 +54,16 @@ long __stdcall internal_handler( EXCEPTION_POINTERS* p_exception_info )
 	return EXCEPTION_CONTINUE_SEARCH;
 }
 
-template <typename A1, typename A2>
-inline bool hook( A1 detour, A2& r_original )
-{
-	static auto once = true;
-	if ( once )
-		once = !( MH_Initialize( ) == MH_OK );
-	auto* p_original = reinterpret_cast<void*>( r_original );
-	auto mh_status = MH_CreateHook( p_original, reinterpret_cast<void*>( detour ), reinterpret_cast<void**>( &r_original ) );
-	if ( mh_status != MH_OK )
-		return false;
-	mh_status = MH_EnableHook( p_original );
-	return ( mh_status == MH_OK );
-}
+
+
+//1452275A8
+/*
+MonsterHunterWorld.exe+23C6774 - 48 8B 8C CB 70140000  - mov rcx,[rbx+rcx*8+00001470]
+MonsterHunterWorld.exe+23C677C - 48 85 C9              - test rcx,rcx
+MonsterHunterWorld.exe+23C677F - 74 1F                 - je MonsterHunterWorld.exe+23C67A0
+
+
+*/
 
 bool hooks::init( )
 {
@@ -49,8 +74,9 @@ bool hooks::init( )
 
 	//auto p_handle = AddVectoredExceptionHandler( 1, internal_handler );
 
-	auto is_ok = hook( ReportProblem, options::reversed::i( )->ptr.func_crash );
-	
-	return is_ok;
+	return true;
+	//auto is_ok = hook( ReportProblem, options::reversed::i( )->ptr.func_crash );
+	//
+	//return is_ok;
 }
 

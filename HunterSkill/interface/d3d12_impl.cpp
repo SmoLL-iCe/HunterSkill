@@ -63,7 +63,7 @@ long __fastcall hkPresentDX12( IDXGISwapChain3* p_swap_chain, UINT sync_interval
 		auto tick_now = GetTickCount64( );
 
 		if ( !tick_wait )
-			tick_wait = tick_now + 10000;
+			tick_wait = tick_now + 1000;
 
 		if (  tick_wait >= tick_now )
 			return oPresentD3D12( p_swap_chain, sync_interval, flags );
@@ -81,6 +81,8 @@ long __fastcall hkPresentDX12( IDXGISwapChain3* p_swap_chain, UINT sync_interval
 			DXGI_SWAP_CHAIN_DESC Desc;
 			p_swap_chain->GetDesc( &Desc );
 			Desc.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
+
+
 			//Desc.OutputWindow = wind;
 			//Desc.Windowed = ( ( GetWindowLongPtr( wind, GWL_STYLE ) & WS_POPUP ) != 0 ) ? false : true;
 
@@ -104,22 +106,21 @@ long __fastcall hkPresentDX12( IDXGISwapChain3* p_swap_chain, UINT sync_interval
 				DirectX12Interface::FrameContext[ i ].CommandAllocator = Allocator;
 			}
 
-			if ( DirectX12Interface::Device->CreateCommandList( 0, D3D12_COMMAND_LIST_TYPE_DIRECT, Allocator, NULL, IID_PPV_ARGS( &DirectX12Interface::CommandList ) ) != S_OK ||
+			if ( DirectX12Interface::Device->CreateCommandList( 0, D3D12_COMMAND_LIST_TYPE_DIRECT, Allocator, nullptr, IID_PPV_ARGS( &DirectX12Interface::CommandList ) ) != S_OK ||
 				DirectX12Interface::CommandList->Close( ) != S_OK )
 				return oPresentD3D12( p_swap_chain, sync_interval, flags );
 
 			D3D12_DESCRIPTOR_HEAP_DESC DescriptorBackBuffers;
-			DescriptorBackBuffers.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
-			DescriptorBackBuffers.NumDescriptors = DirectX12Interface::BuffersCounts;
-			DescriptorBackBuffers.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
-			DescriptorBackBuffers.NodeMask = 1;
+			DescriptorBackBuffers.Type				= D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
+			DescriptorBackBuffers.NumDescriptors	= DirectX12Interface::BuffersCounts;
+			DescriptorBackBuffers.Flags				= D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+			DescriptorBackBuffers.NodeMask			= 1;
 
-			//printf( "p4\n" );
 			if ( DirectX12Interface::Device->CreateDescriptorHeap( &DescriptorBackBuffers, IID_PPV_ARGS( &DirectX12Interface::DescriptorHeapBackBuffers ) ) != S_OK )
 				return oPresentD3D12( p_swap_chain, sync_interval, flags );
 
-			const auto RTVDescriptorSize = DirectX12Interface::Device->GetDescriptorHandleIncrementSize( D3D12_DESCRIPTOR_HEAP_TYPE_RTV );
-			D3D12_CPU_DESCRIPTOR_HANDLE RTVHandle = DirectX12Interface::DescriptorHeapBackBuffers->GetCPUDescriptorHandleForHeapStart( );
+			const auto RTVDescriptorSize			= DirectX12Interface::Device->GetDescriptorHandleIncrementSize( D3D12_DESCRIPTOR_HEAP_TYPE_RTV );
+			auto RTVHandle							= DirectX12Interface::DescriptorHeapBackBuffers->GetCPUDescriptorHandleForHeapStart( );
 
 			for ( size_t i = 0; i < DirectX12Interface::BuffersCounts; i++ ) 
 			{
@@ -131,7 +132,10 @@ long __fastcall hkPresentDX12( IDXGISwapChain3* p_swap_chain, UINT sync_interval
 				RTVHandle.ptr += RTVDescriptorSize;
 			}
 			
-			
+			RECT rct{ };
+			GetWindowRect( Desc.OutputWindow, &rct );
+			impl::screen( )[ 0 ] = (float)( rct.right	- rct.left );
+			impl::screen( )[ 01 ] = (float)( rct.bottom	- rct.top );
 
 			ImGui_ImplWin32_Init( Desc.OutputWindow );
 			ImGui_ImplDX12_Init( DirectX12Interface::Device, DirectX12Interface::BuffersCounts, DXGI_FORMAT_R8G8B8A8_UNORM, DirectX12Interface::DescriptorHeapImGuiRender, DirectX12Interface::DescriptorHeapImGuiRender->GetCPUDescriptorHandleForHeapStart( ), DirectX12Interface::DescriptorHeapImGuiRender->GetGPUDescriptorHandleForHeapStart( ) );
