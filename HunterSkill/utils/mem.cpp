@@ -190,8 +190,8 @@ bool i_mem::is_valid_read_safe( void* p, size_t size  )
 {
 	MEMORY_BASIC_INFORMATION mbi = { };
 	mbi.Protect = 0;
-	//auto ss = mbi.RegionSize - ( reinterpret_cast<uintptr_t>( p ) - reinterpret_cast<uintptr_t>( mbi.BaseAddress ) );
-	return ( virtual_query( p, &mbi, sizeof mbi ) && ( mbi.Protect & forbidden ) == 0 && ( mbi.Protect & readable ) != 0 /*&& ss > size*/ );
+	auto ss = mbi.RegionSize - ( reinterpret_cast<uintptr_t>( p ) - reinterpret_cast<uintptr_t>( mbi.BaseAddress ) );
+	return ( virtual_query( p, &mbi, sizeof mbi ) && ( mbi.Protect & forbidden ) == 0 && ( mbi.Protect & readable ) != 0 && ss > size );
 }
 
 #ifdef ENV32BIT

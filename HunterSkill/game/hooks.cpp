@@ -29,14 +29,10 @@ inline bool rem_hook( A1 r_original )
 
 void __fastcall ReportProblem( DWORD code, const char* str )
 {
-	if ( !code )
+	if ( !code || code == 0x887A0001 )
 		return;
 
-	if ( code == 0x887A0001 )
-	{
 
-		return;	
-	}
 
 	printf( "report problem, code: 0x%X\n", code );
 
@@ -72,11 +68,28 @@ bool hooks::init( )
 
 	Sleep( 500 );
 
+	uint8_t* ac[ ] =
+	{
+		u8ptr( 0x142781010 ),
+		u8ptr( 0x142782790 ),
+		u8ptr( 0x142758DD0 ),
+	};
+
+	for ( auto* ptr : ac )
+	{
+		DWORD p;
+		if ( VirtualProtect( ptr, 0x8, PAGE_EXECUTE_READWRITE, &p ) )
+		{
+			ptr[ 0 ] = 0xc3;
+			VirtualProtect( ptr, 0x8, p, &p );
+		}
+	
+	}
 	//auto p_handle = AddVectoredExceptionHandler( 1, internal_handler );
 
-	return true;
-	//auto is_ok = hook( ReportProblem, options::reversed::i( )->ptr.func_crash );
-	//
-	//return is_ok;
+	//return true;
+	auto is_ok = hook( ReportProblem, options::reversed::i( )->ptr.func_crash );
+	
+	return is_ok;
 }
 

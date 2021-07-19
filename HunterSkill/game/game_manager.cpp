@@ -94,8 +94,15 @@ void game::manager::entity_callback( entity_cb func )
 		func( entity );
 }
 
+
+extern uint32_t inc_val ;
+
+uint8_t block[ 0xF0000 ];
 void game::manager::update_entities( )
 {
+	if ( inc_val == 0xFFFFFFFF )
+		inc_val = 0;
+	inc_val++;
 	if ( updated_list )
 		return;
 
@@ -114,13 +121,21 @@ void game::manager::update_entities( )
 	new_entities.clear( );
 	for ( auto i = 0UL; i < total_entity; ++i )
 	{
-		auto ptr = entities_entry[ i ];
+		s_entity ent;
+
+		auto ptr	= entities_entry[ i ];
+
+		ent.ptr		= r_cast<c_entity*>( ptr );
 
 		if ( !ptr ) 
 			continue;
 
 		if ( !mem::is_valid_read( ptr ) || !mem::is_valid_read( ptr + 0x7670 ) )
 			continue;
+
+		ent.pos		= ent.ptr->get_pos( );
+
+		ent.is_boss = ent.ptr->is_boss( );
 
 		if (!(	*r_cast< uint32_t*>( ptr + 0xC ) == 8 &&
 
@@ -140,31 +155,16 @@ void game::manager::update_entities( )
 
 		auto sub = *r_cast<uintptr_t*>( ptr + 0x7670 );
 
-		if ( sub == 0 || !mem::is_valid_read( sub ) )
-			continue;
+		if ( sub != 0 && mem::is_valid_read( sub + 0x60 ) )
+		{
+			ent.health		= *r_cast<float*>( sub + 0x64 );
 
-		auto entity = r_cast<c_entity*>( ptr );
+			ent.max_health	= *r_cast<float*>( sub + 0x60 );		
+		}
 
-		new_entities.push_back( {
 
-				entity->is_boss( ),
-
-				*r_cast<float*>( sub + 0x64 ),
-
-				*r_cast<float*>( sub + 0x60 ),
-
-				entity->get_pos( ),
-
-				entity
-			} );
+		new_entities.push_back( ent );
 	}
 
 	updated_list = true;
-	//while ( called_callback ) //race condition
-	//	Sleep( 0 );
-	//update_list = true;
-	//entities.clear();
-	//entities = new_entities;
-	//update_list = false;
-
 }

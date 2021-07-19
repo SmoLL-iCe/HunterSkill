@@ -3,7 +3,6 @@
 #include "interface/d3d11_impl.h"
 #include "interface/d3d12_impl.h"
 #include "interface/win32_impl.h"
-
 #include "game/shared_config.h"
 #include "game/game_manager.h"
 #include "utils/mem.h"
@@ -19,22 +18,33 @@ void __stdcall overgay( )
     	[ ] ( game::s_entity entity ) -> void
     	{
     		
-    		if ( !entity.is_boss )
-    			return;
+            auto cor = ImVec4( 1.f, 0.f, 0.f, 1.f );
+            if (! entity.is_boss )
+            {
+                cor.x = 0.f;
+                cor.y = 1.f;
+                return;
+            }
+
+            if ( entity.health <= 0 || entity.max_health <= 0 )
+                return;
+
+            auto percent_hp = ( entity.health / entity.max_health ) * 100.f;
+
+            if ( percent_hp <= 0.f || percent_hp > 100.f )
+                return;
 
     		vec3 out;
 
     		if ( !game::manager::i( )->w2s( entity.pos, out ) )
     			return;
 
-            auto percent_hp = ( entity.health / entity.max_health ) * 100.f;
 
     		std::ostringstream ss;
-    		ss << "BOSS 0x" << std::hex << std::uppercase << entity.ptr << "\nPOS[ X: " << std::dec << entity.pos.x << ", Y: " << entity.pos.y << ", Z: " << entity.pos.z << " ]\nHP: " << percent_hp;
+    		ss << "ENTITY 0x" << std::hex << std::uppercase << entity.ptr << "\nPOS[ X: " << std::dec << entity.pos.x << ", Y: " << entity.pos.y << ", Z: " << entity.pos.z << " ]\nHP: " << percent_hp;
 
-    		//printf( "%s\n", ss.str().c_str( ) );
     		ImGui::GetOverlayDrawList( )->AddText( ImVec2( out.x, out.y ),
-    			ImGui::GetColorU32( ImVec4( 1.f, 0.f, 0.f, 1.f ) ), ss.str( ).c_str( ) );
+    			ImGui::GetColorU32( cor ), ss.str( ).c_str( ) );
 
     	} );
 
@@ -61,11 +71,11 @@ int main( )
 
     hooks::init( );
 
-    auto sound = r_cast<bool*>( 0x1450A4998 );
-    while ( !*sound )
-    {
-        Sleep( 100 );
-    }
+    //auto sound = r_cast<bool*>( 0x1450A4998 );
+    //while ( !*sound )
+    //{
+    //    Sleep( 100 );
+    //}
 
     impl::d3d12::init( );
 
@@ -76,6 +86,7 @@ int main( )
         Sleep( 100 );
         if ( *reinterpret_cast<uint32_t*>( 0x145073B3C ) != 0xFFFFFFFF )
             continue;
+
 
         game::manager::i( )->update_entities( );
    

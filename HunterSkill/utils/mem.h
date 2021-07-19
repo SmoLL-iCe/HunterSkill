@@ -30,8 +30,8 @@ namespace i_mem
 	size_t get_module_size( uint8_t* mod_base );
 	bool is_valid_write_obsolete( void* p );
 	bool is_valid_read_obsolete( void* p );
-	bool is_valid_write_safe( void* p, size_t size );
-	bool is_valid_read_safe( void* p, size_t size );
+	bool is_valid_write_safe( void* p, size_t size = 8 );
+	bool is_valid_read_safe( void* p, size_t size = 8 );
 
 	inline bool is_valid_write( void* p, size_t size = 8 )
 	{
@@ -133,22 +133,22 @@ namespace mem
 	}
 
 	template <typename A = uint8_t*>
-	bool is_valid_write( A p )
+	bool is_valid_write( A p, size_t s = 0 )
 	{
 #ifdef USENOSAFE
 		return i_mem::is_valid_write_obsolete( reinterpret_cast<void*>( p ) );
 #else
-		return i_mem::is_valid_write_safe( reinterpret_cast<void*>( p ) );
+		return i_mem::is_valid_write_safe( reinterpret_cast<void*>( p ), s );
 #endif
 	}
 
 	template <typename A = uint8_t*>
-	bool is_valid_read( A p )
+	bool is_valid_read( A p, size_t s = 0 )
 	{
 #ifdef USENOSAFE
 		return i_mem::is_valid_read_obsolete( reinterpret_cast<void*>( p ) );
 #else
-		return i_mem::is_valid_read_safe( reinterpret_cast<void*>( p ), 8 );
+		return i_mem::is_valid_read_safe( reinterpret_cast<void*>( p ), s );
 #endif
 	}
 
