@@ -1,6 +1,8 @@
 #pragma once
 #include <windows.h>
 #include <iostream>
+#include <fstream>
+#include <string>
 #define r_cast reinterpret_cast
 #define s_cast static_cast
 #define d_cast dynamic_cast
