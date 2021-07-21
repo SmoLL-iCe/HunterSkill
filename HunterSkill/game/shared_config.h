@@ -42,7 +42,7 @@ namespace options
 			uint32_t mgr_flags1 = 0x4A48;
 
 
-			uint32_t pos = 0x390;
+			uint32_t pos = 0x160;
 		}offset;
 		//=====================//=====================
 		//struct c_exe
