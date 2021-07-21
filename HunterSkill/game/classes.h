@@ -5,7 +5,7 @@
 
 struct vec3 final
 {
-	float x, y, z;
+	float x = 0, y = 0, z = 0;
 	vec3( ) {};
 	vec3( const float x, const float y, const float z ) : x( x ), y( y ), z( z ) {}
 	vec3 operator  + ( const vec3& rhs ) const { return vec3( x + rhs.x, y + rhs.y, z + rhs.z ); }
