@@ -76,9 +76,40 @@ LRESULT __stdcall wnd_proc( HWND h_wnd, UINT const msg, WPARAM const w_param, LP
 	//return CallWindowProc( wnd_proc_old, h_wnd, msg, w_param, l_param );
 }
 
+struct handle_data {
+	uint32_t process_id;
+	HWND window_handle;
+};
+BOOL CALLBACK enum_windows_callback(HWND handle, LPARAM lParam);
+
+BOOL is_main_window(HWND handle)
+{
+	return GetWindow(handle, GW_OWNER) == (HWND)0 && IsWindowVisible(handle);
+}
+
+BOOL CALLBACK enum_windows_callback(HWND handle, LPARAM lParam)
+{
+	handle_data& data = *(handle_data*)lParam;
+	unsigned long process_id = 0;
+	GetWindowThreadProcessId(handle, &process_id);
+	if (data.process_id != process_id || !is_main_window(handle))
+		return TRUE;
+	data.window_handle = handle;
+	return FALSE;
+}
+
 
 void impl::win32::init(void* hwnd)
 {
 	oWndProc = reinterpret_cast<WNDPROC>( SetWindowLongPtr( (HWND)hwnd, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>( wnd_proc ) ) );
+}
+
+HWND impl::win32::find_my_window(uint32_t pid)
+{
+	handle_data data;
+	data.process_id = pid;
+	data.window_handle = 0;
+	EnumWindows(enum_windows_callback, (LPARAM)&data);
+	return data.window_handle;
 }
 

@@ -9,7 +9,9 @@
 #include <sstream>
 #include "thirdparty/imgui/imgui.h"
 #include "game/hooks.h"
+#include "Monster_names.hpp"
 
+bool anyway_just_show = false; 
 
 void drawn_bar(float hp, float max_hp, int size_, ImVec2 Pos)
 {
@@ -25,14 +27,25 @@ void drawn_bar(float hp, float max_hp, int size_, ImVec2 Pos)
 
     if (hp <= 0.f)
         return;
+
+    ImVec4 Color_ = { 0.203f, 0.415f, 0.223f,1.0f };
+    if(percent >= 51 )
+        Color_ = { 0.203f, 0.415f, 0.223f,1.0f };
+    else if(percent >= 21)
+        Color_ = { 0.75f, 0.75f, 0.078f,1.0f };
+    else if (percent <= 20)
+        Color_ = { 1.f, 0.015f, 0.053f,1.0f };
+
+    //1, 0.019, 0.050
+
     //ANIMATION BAR
     if (percent)
     {
         auto x = size_ * (percent / 100.f);
         //printf("%f\n", x);
-        ImGui::GetOverlayDrawList()->AddTriangleFilled(Pos, { Pos.x - 10, Pos.y + 5 }, { Pos.x, Pos.y + 10 }, ImGui::GetColorU32({ 0.203f, 0.415f, 0.223f,1.0f }));
-        ImGui::GetOverlayDrawList()->AddTriangleFilled({ Pos.x + x, Pos.y }, { Pos.x + x, Pos.y + 10 }, { Pos.x + x + 10, Pos.y + 5 }, ImGui::GetColorU32({ 0.203f, 0.415f, 0.223f,1.0f }));
-        ImGui::GetOverlayDrawList()->AddRectFilled({ Pos.x, Pos.y - 1 }, { Pos.x + x, Pos.y + 11 }, ImGui::GetColorU32({ 0.203f, 0.415f, 0.223f,1.0f }));
+        ImGui::GetOverlayDrawList()->AddTriangleFilled(Pos, { Pos.x - 10, Pos.y + 5 }, { Pos.x, Pos.y + 10 }, ImGui::GetColorU32(Color_));
+        ImGui::GetOverlayDrawList()->AddTriangleFilled({ Pos.x + x, Pos.y }, { Pos.x + x, Pos.y + 10 }, { Pos.x + x + 10, Pos.y + 5 }, ImGui::GetColorU32(Color_));
+        ImGui::GetOverlayDrawList()->AddRectFilled({ Pos.x, Pos.y - 1 }, { Pos.x + x, Pos.y + 11 }, ImGui::GetColorU32(Color_));
     }
 }
 
@@ -45,8 +58,15 @@ void drawn_background(ImVec2 Pos, float around, ImVec2 Size = { 250,130 })
 
 void __stdcall overgay( )
 {
-    if ( *reinterpret_cast<uint32_t*>( 0x145073B3C ) != 0xFFFFFFFF )
-        return;
+    if (!anyway_just_show)
+    {
+        if (*reinterpret_cast<uint32_t*>(0x145073B3C) != 0xFFFFFFFF)
+            return;
+    }
+    else
+        ImGui::GetOverlayDrawList()->AddText(ImVec2(5, 5),
+            ImGui::GetColorU32({ 1,0,0,1 }), "WARNING! ANYWAY JUST SHOW IS ENABLE PRESS F1 TO DISABLE");
+
     game::manager::i( )->entity_callback(  
     	[ ] ( game::s_entity entity ) -> void
     	{
@@ -71,8 +91,30 @@ void __stdcall overgay( )
 
             auto distance = game::manager::i( )->get_self_player( )->get_pos( ).distance( &entity.pos );
  
+            std::string file_monster = entity.file;
+            size_t erease = file_monster.find("mod");
+            if (erease != std::string::npos) file_monster = file_monster.substr(erease+4);
+           /* erease = file_monster.find("em");
+            if (erease != std::string::npos) file_monster = file_monster.substr(erease);*/
+
+            for (const auto mh: monster_name)
+            {
+                size_t find = mh.find(file_monster);
+                if (find != std::string::npos)
+                {
+                    file_monster = mh.substr(file_monster.length());
+                    break;
+                }
+            }
+
+            //std::cout << "\n>" << file_monster << std::endl;
+   
+            if (distance > 100000)
+                return;
+
+
     		std::ostringstream ss;
-    		ss  <<"ENTITY 0x" << std::hex << std::uppercase << entity.ptr << "\nDistance [ " << std::dec << distance << " ]\nFile : " << entity.file;
+    		ss  <<"ENTITY 0x" << std::hex << std::uppercase << entity.ptr << "\nDistance [ " << std::dec << distance << " ]\nFile(name): " << file_monster;
 
             drawn_background({ out.x, out.y }, 15 , {210, 90});
 
@@ -150,10 +192,8 @@ int main( )
     std::cout << err << std::endl;
     suporte_to_d3d12 = !err;
 
+    hooks::init();
 
-
-
-    hooks::init( );
 
     //auto sound = r_cast<bool*>( 0x1450A4998 );
     //while ( !*sound )
@@ -173,14 +213,51 @@ int main( )
         impl::d3d11::init();
         impl::d3d11::set_overlay(overgay);
     }
-        
+
+
+    /*
+        HWND window = NULL;
+        while (window == 0)
+        {
+
+            auto pid = GetCurrentProcessId();
+            window = impl::win32::find_my_window(pid);
+
+            char nome[255];
+
+            if (window)
+            {
+                GetWindowTextA(window, nome, 255);
+                std::string wnd = nome;
+                if (wnd.find("MONSTER HUNTER") != std::string::npos && window || !GetWindowThreadProcessId(window, &pid))
+                    printf_s(nome);
+                else
+                    window = 0;
+            }
+
+        }
+
+        std::cout << "init\n";
+        impl::win32::init(window); // game crash
+        std::cout << "go\n";
+    */
 
 
     while ( true )
     {
+
+        if (GetAsyncKeyState(VK_F1)& 0x8000)
+            anyway_just_show = !anyway_just_show;
+       
         Sleep( 100 );
-        if ( *reinterpret_cast<uint32_t*>( 0x145073B3C ) != 0xFFFFFFFF )
-            continue;
+        if (!anyway_just_show)
+        {
+            if (*reinterpret_cast<uint32_t*>(0x145073B3C) != 0xFFFFFFFF)
+                continue;
+        }
+
+
+        
 
 
         game::manager::i( )->update_entities( );

@@ -154,6 +154,7 @@
     <ClInclude Include="interface\menu.h" />
     <ClInclude Include="interface\steam.h" />
     <ClInclude Include="interface\win32_impl.h" />
+    <ClInclude Include="Monster_names.hpp" />
     <ClInclude Include="stb_image.h" />
     <ClInclude Include="thirdparty\imgui\imconfig.h" />
     <ClInclude Include="thirdparty\imgui\imgui.h" />
