@@ -81,10 +81,11 @@ namespace game
 	struct s_entity
 	{
 		bool is_boss = false;
-		float health;
-		float max_health;
+		float health = 0.f;
+		float max_health = 0.f;
 		vec3 pos;
-		c_entity* ptr;
+		c_entity* ptr = nullptr;
+		char file[ 100 ]{ };
 	};
 
 }

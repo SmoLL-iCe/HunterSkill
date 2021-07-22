@@ -52,8 +52,6 @@ long __stdcall internal_handler( EXCEPTION_POINTERS* p_exception_info )
 }
 
 
-
-
 //142FE2D24
 //1452275A8
 /*

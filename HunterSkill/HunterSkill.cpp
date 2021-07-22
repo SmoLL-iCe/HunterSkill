@@ -72,7 +72,7 @@ void __stdcall overgay( )
             auto distance = game::manager::i( )->get_self_player( )->get_pos( ).distance( &entity.pos );
  
     		std::ostringstream ss;
-    		ss  <<"ENTITY 0x" << std::hex << std::uppercase << entity.ptr << "\nDistance [ " << std::dec << distance << " ]\nFile : Main0001_01 ";
+    		ss  <<"ENTITY 0x" << std::hex << std::uppercase << entity.ptr << "\nDistance [ " << std::dec << distance << " ]\nFile : " << entity.file;
 
             drawn_background({ out.x, out.y }, 15 , {210, 90});
 
