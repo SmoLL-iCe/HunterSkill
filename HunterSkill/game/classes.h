@@ -60,38 +60,6 @@ struct vec3 final
 	{
 		return ( x == 0.f && y == 0.f && z == 0.f );
 	}
-	inline void Clamp( )
-	{
-		if ( this->x < -89.0f )
-			this->x = -89.0f;
-
-		if ( this->x > 89.0f )
-			this->x = 89.0f;
-
-		while ( this->y < -180.0f )
-			this->y += 360.0f;
-
-		while ( this->y > 180.0f )
-			this->y -= 360.0f;
-
-		this->z = 0.0f;
-	}
-	inline void to_angle( )
-	{
-		//57.295776
-
-		this->x *= 57.295776f;
-		this->y *= 57.295776f;
-		this->z = 0;
-	}
-	inline void to_radiant( )
-	{
-		//57.295776
-
-		this->x /= 57.295776f;
-		this->y /= 57.295776f;
-		this->z = 0;
-	}
 };
 
 namespace game 

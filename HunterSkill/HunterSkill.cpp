@@ -68,9 +68,11 @@ void __stdcall overgay( )
     			return;
 
             std::string hp_hud = " HP: " +  std::to_string((int)entity.health) + "/" + std::to_string( (int)entity.max_health);
+
+            auto distance = game::manager::i( )->get_self_player( )->get_pos( ).distance( &entity.pos );
  
     		std::ostringstream ss;
-    		ss  <<"ENTITY 0x" << std::hex << std::uppercase << entity.ptr << "\nPOS[X:" << std::dec << entity.pos.x << ", Y : " << entity.pos.y << ",\n\t   Z : " << entity.pos.z << "]\nFile : Main0001_01 ";
+    		ss  <<"ENTITY 0x" << std::hex << std::uppercase << entity.ptr << "\nDistance [ " << std::dec << distance << " ]\nFile : Main0001_01 ";
 
             drawn_background({ out.x, out.y }, 15 , {210, 90});
 

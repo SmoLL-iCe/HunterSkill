@@ -24,6 +24,8 @@ namespace options
 		//=====================//=====================
 		struct c_ptr
 		{
+			uint8_t* to_lp = U8PTR( 0x14506F1B0 );
+			uint8_t* get_lp = U8PTR( 0x141B56F80 );
 			uint8_t* to_inst_mgr = U8PTR( 0x145183E00 );
 			uint8_t* to_viewmatrix = U8PTR( 0x145236E10 );
 			uint8_t* func_crash = U8PTR( 0x142570850 );

@@ -4,6 +4,7 @@
 #include "../utils/mem.h"
 #include "../thirdparty/minhook/include/MinHook.h"
 #include "../utils/utils.h"
+#include <intrin.h>
 
 template <typename A1, typename A2>
 inline bool hook( A1 detour, A2& r_original )
@@ -52,6 +53,8 @@ long __stdcall internal_handler( EXCEPTION_POINTERS* p_exception_info )
 
 
 
+
+//142FE2D24
 //1452275A8
 /*
 MonsterHunterWorld.exe+23C6774 - 48 8B 8C CB 70140000  - mov rcx,[rbx+rcx*8+00001470]
@@ -73,6 +76,9 @@ bool hooks::init( )
 		u8ptr( 0x142781010 ),
 		u8ptr( 0x142782790 ),
 		u8ptr( 0x142758DD0 ),
+		u8ptr( 0x14277BDD0 ),
+		u8ptr( 0x142776B90 ),
+		u8ptr( 0x14278CE20 ),
 	};
 
 	for ( auto* ptr : ac )

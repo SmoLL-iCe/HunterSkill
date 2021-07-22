@@ -53,6 +53,7 @@ float D3DXVec3Dot( CONST vec3* pV1, CONST vec3* pV2 )
 
 bool game::manager::w2s( vec3 origin, vec3& out )
 {
+
 	auto mm					= *r_cast<uintptr_t*>( options::reversed::i( )->ptr.to_viewmatrix );
 
 	if ( !mm ) return false;
@@ -95,14 +96,20 @@ void game::manager::entity_callback( entity_cb func )
 }
 
 
-extern uint32_t inc_val ;
+game::c_entity* game::manager::get_self_player( )
+{
+	return r_cast<c_entity*>( m_localplayer );
+}
 
-uint8_t block[ 0xF0000 ];
 void game::manager::update_entities( )
 {
-	if ( inc_val == 0xFFFFFFFF )
-		inc_val = 0;
-	inc_val++;
+
+	auto bs = *reinterpret_cast<uintptr_t*>( options::reversed::i( )->ptr.to_lp );
+
+	if ( !bs ) return;
+
+	m_localplayer = reinterpret_cast<uintptr_t( __fastcall* )( uintptr_t )>( options::reversed::i( )->ptr.get_lp )( bs );
+
 	if ( updated_list )
 		return;
 
@@ -124,6 +131,8 @@ void game::manager::update_entities( )
 		s_entity ent;
 
 		auto ptr	= entities_entry[ i ];
+
+		if ( m_localplayer == ptr ) continue;
 
 		ent.ptr		= r_cast<c_entity*>( ptr );
 
