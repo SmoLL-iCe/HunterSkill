@@ -11,8 +11,6 @@
 #include "game/hooks.h"
 #include "Monster_names.hpp"
 
-bool anyway_just_show = false; 
-
 void drawn_bar(float hp, float max_hp, int size_, ImVec2 Pos)
 {
     // BASE DRAWN
@@ -49,6 +47,26 @@ void drawn_bar(float hp, float max_hp, int size_, ImVec2 Pos)
     }
 }
 
+std::string getMonsterName( std::string file_monster )
+{
+
+    //std::string file_monster = entity.file;
+    size_t erease = file_monster.find( "mod" );
+
+    if ( erease != std::string::npos ) file_monster = file_monster.substr( erease + 4 );
+
+    for ( const auto mh : monster_name )
+    {
+        size_t find = mh.find( file_monster );
+        if ( find != std::string::npos )
+        {
+            file_monster = mh.substr( file_monster.length( ) );
+            break;
+        }
+    }
+    return file_monster;
+}
+
 
 void drawn_background(ImVec2 Pos, float around, ImVec2 Size = { 250,130 })
 {
@@ -58,31 +76,42 @@ void drawn_background(ImVec2 Pos, float around, ImVec2 Size = { 250,130 })
 
 void __stdcall overgay( )
 {
-    if (!anyway_just_show)
-    {
-        if (*reinterpret_cast<uint32_t*>(0x145073B3C) != 0xFFFFFFFF)
-            return;
-    }
-    else
-        ImGui::GetOverlayDrawList()->AddText(ImVec2(5, 5),
-            ImGui::GetColorU32({ 1,0,0,1 }), "WARNING! ANYWAY JUST SHOW IS ENABLE PRESS F1 TO DISABLE");
+    if ( !game::manager::i( )->in_hunting( ) )
+        return;
 
     game::manager::i( )->entity_callback(  
     	[ ] ( game::s_entity entity ) -> void
     	{
-    		
+
+
+            vec3 out;
             auto cor = ImVec4( 1.f, 0.f, 0.f, 1.f );
             if (! entity.is_boss )
             {
                 cor.x = 0.f;
                 cor.y = 1.f;
+
+                if ( entity.is_player )
+                {
+
+                    if ( !game::manager::i( )->w2s( entity.pos, out ) )
+                        return;
+
+                    auto distance = game::manager::i( )->get_self_player( )->get_pos( ).distance( &entity.pos );
+
+                    std::ostringstream ss;
+                    ss << "PLAYER 0x" << std::hex << std::uppercase << entity.ptr << "\nDistance [ " << std::dec << distance << " ]\n";
+
+
+                    ImGui::GetOverlayDrawList( )->AddText( ImVec2( out.x + 10, out.y + 30 ),
+                        ImGui::GetColorU32( cor ), ss.str( ).c_str( ) );
+
+                }
                 return;
             }
 
             if ( entity.health <= 0 || entity.max_health <= 0 )
                 return;
-
-    		vec3 out;
 
     		if ( !game::manager::i( )->w2s( entity.pos, out ) )
     			return;
@@ -91,27 +120,10 @@ void __stdcall overgay( )
 
             auto distance = game::manager::i( )->get_self_player( )->get_pos( ).distance( &entity.pos );
  
-            std::string file_monster = entity.file;
-            size_t erease = file_monster.find("mod");
-            if (erease != std::string::npos) file_monster = file_monster.substr(erease+4);
-           /* erease = file_monster.find("em");
-            if (erease != std::string::npos) file_monster = file_monster.substr(erease);*/
-
-            for (const auto mh: monster_name)
-            {
-                size_t find = mh.find(file_monster);
-                if (find != std::string::npos)
-                {
-                    file_monster = mh.substr(file_monster.length());
-                    break;
-                }
-            }
-
-            //std::cout << "\n>" << file_monster << std::endl;
+            auto file_monster = getMonsterName( entity.file );
    
             if (distance > 100000)
                 return;
-
 
     		std::ostringstream ss;
     		ss  <<"ENTITY 0x" << std::hex << std::uppercase << entity.ptr << "\nDistance [ " << std::dec << distance << " ]\nFile(name): " << file_monster;
@@ -194,13 +206,6 @@ int main( )
 
     hooks::init();
 
-
-    //auto sound = r_cast<bool*>( 0x1450A4998 );
-    //while ( !*sound )
-    //{
-    //    Sleep( 100 );
-    //}
-
     if (suporte_to_d3d12)
     {
         std::cout << "Have compatibily with Dx12\n";
@@ -214,51 +219,77 @@ int main( )
         impl::d3d11::set_overlay(overgay);
     }
 
+    bool init_hunting = false;
 
-    /*
-        HWND window = NULL;
-        while (window == 0)
+    while ( true )
+    {
+        Sleep( 100 );
+
+        if ( GetAsyncKeyState( VK_F1 ) & 0x8000 )
         {
-
-            auto pid = GetCurrentProcessId();
-            window = impl::win32::find_my_window(pid);
-
-            char nome[255];
-
-            if (window)
+            system( "cls" );
+            auto myplayer = uintptr_t( game::manager::i()->get_self_player( ) );
+            if ( myplayer )
             {
-                GetWindowTextA(window, nome, 255);
-                std::string wnd = nome;
-                if (wnd.find("MONSTER HUNTER") != std::string::npos && window || !GetWindowThreadProcessId(window, &pid))
-                    printf_s(nome);
-                else
-                    window = 0;
+                for ( auto& monster : game::manager::i( )->hunting_damage( ) )
+                {
+
+                    std::ostringstream ss;
+                    ss <<  "=========================================================================================" << std::endl <<
+                        "\tTarget 0x" << monster.target_ptr << " name: " << getMonsterName( monster.name ) << std::endl;
+                    for ( auto &who_dam : monster.who_caused_damage )
+                    {
+                        auto isSelfPlayerDamage = myplayer == who_dam.entity;
+
+                        ss << "\tAttack from" << ( ( isSelfPlayerDamage ) ? " self player " : ( who_dam.is_player ? " another player " : " " ) ) << "0x"
+                            << std::hex << std::uppercase << who_dam.entity << std::endl;
+                       
+
+                        for ( auto dan : who_dam.damage )
+                        {
+                            ss << "\t\tDamage hit: " << std::dec << (int)dan << std::endl;
+
+                        }
+
+                        ss << "\tTotal Damage: " << std::dec << (int)who_dam.total_damage << std::endl;
+                        ss << "-----------------------------------------------------------------------------------------" << std::endl;
+
+                    }
+                    ss << "=========================================================================================" << std::endl;
+                    std::cout << ss.str( ) << std::endl;;
+                }
+
+
             }
 
         }
 
-        std::cout << "init\n";
-        impl::win32::init(window); // game crash
-        std::cout << "go\n";
-    */
+        game::manager::i( )->clear_boss( );
 
-
-    while ( true )
-    {
-
-        if (GetAsyncKeyState(VK_F1)& 0x8000)
-            anyway_just_show = !anyway_just_show;
-       
-        Sleep( 100 );
-        if (!anyway_just_show)
+        if ( !game::manager::i( )->in_hunting( ) )
         {
-            if (*reinterpret_cast<uint32_t*>(0x145073B3C) != 0xFFFFFFFF)
-                continue;
+            init_hunting = false;
+            continue;
         }
 
-
-        
-
+        if ( !init_hunting )
+        {
+            init_hunting = true;
+            printf( "iniciou a batalha, agora limpar a lista.\n" );
+            for ( auto& monster : game::manager::i( )->hunting_damage( ) )
+            {
+                for ( auto &who_dam : monster.who_caused_damage )
+                {
+                    who_dam.damage.clear( );
+                    who_dam.damage.swap( who_dam.damage );
+                }
+                monster.who_caused_damage.clear( );
+                monster.who_caused_damage.swap( monster.who_caused_damage );
+            }
+            game::manager::i( )->hunting_damage( ).clear( );
+            game::manager::i( )->hunting_damage( ).swap( game::manager::i( )->hunting_damage( ) );
+            printf( "lista limpa.\n" );
+        }
 
         game::manager::i( )->update_entities( );
    
