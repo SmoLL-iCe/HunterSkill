@@ -5,11 +5,7 @@
 #include "../utils/mem.h"
 #include "../interface/d3d11_impl.h"
 #include <vector>
-
-//bool called_callback = false;
-//bool update_list = false;
-
-//std::vector<game::c_entity*> entities{ };
+#include <sstream>
 
 game::manager* c_manager = nullptr;
 
@@ -85,13 +81,13 @@ bool game::manager::w2s( vec3 origin, vec3& out )
 void game::manager::entity_callback( entity_cb func )
 {
 	if ( !func ) return;
-	if ( updated_list )
+	if ( m_updated_list )
 	{
-		entities.clear( );
-		entities = new_entities;
-		updated_list = false;
+		m_entities.clear( );
+		m_entities = m_new_entities;
+		m_updated_list = false;
 	}
-	for ( auto &entity : entities )
+	for ( auto &entity : m_entities )
 		func( entity );
 }
 
@@ -99,6 +95,24 @@ void game::manager::entity_callback( entity_cb func )
 game::c_entity* game::manager::get_self_player( )
 {
 	return r_cast<c_entity*>( m_localplayer );
+}
+
+bool game::manager::in_hunting( )
+{
+	return ( 0 != *reinterpret_cast<uintptr_t*>( options::reversed::i( )->ptr.ptr_ingame ) );
+}
+
+std::vector<game::s_monster_damage>& game::manager::hunting_damage( )
+{
+	return m_monster_damage;
+}
+
+void game::manager::clear_boss( )
+{
+	if ( !game::manager::i( )->in_hunting( ) )
+	{
+		m_bosses.clear( );
+	}
 }
 
 void game::manager::update_entities( )
@@ -110,7 +124,9 @@ void game::manager::update_entities( )
 
 	m_localplayer = reinterpret_cast<uintptr_t( __fastcall* )( uintptr_t )>( options::reversed::i( )->ptr.get_lp )( bs );
 
-	if ( updated_list )
+
+
+	if ( m_updated_list )
 		return;
 
 	if ( !m_instance_mgr ) return;
@@ -125,7 +141,10 @@ void game::manager::update_entities( )
 	if ( !entities_entry )
 		return;
 
-	new_entities.clear( );
+
+	auto player_vtable = *r_cast<uintptr_t*>( m_localplayer );
+
+	m_new_entities.clear( );
 	for ( auto i = 0UL; i < total_entity; ++i )
 	{
 		s_entity ent;
@@ -142,7 +161,9 @@ void game::manager::update_entities( )
 		if ( !mem::is_valid_read( ptr ) || !mem::is_valid_read( ptr + 0x7670 ) )
 			continue;
 
-		ent.pos		= ent.ptr->get_pos( );
+		ent.is_player =  *r_cast<uintptr_t*>( ptr ) == player_vtable;
+
+		ent.pos	= ent.ptr->get_pos( );
 
 		ent.is_boss = ent.ptr->is_boss( );
 
@@ -184,9 +205,115 @@ void game::manager::update_entities( )
 		
 		}
 
+		if ( ent.is_boss )
+		{
+			auto exist = false;
+			for ( auto boss : m_bosses )
+			{
+				if ( boss.ptr == ent.ptr )
+				{
+					exist = true;
+					break;
+				}
+			}
 
-		new_entities.push_back( ent );
+			if ( !exist )
+				m_bosses.push_back( ent );
+		}
+
+
+		m_new_entities.push_back( ent );
 	}
 
-	updated_list = true;
+	m_updated_list = true;
+}
+
+
+void game::manager::set_damage( uintptr_t who_caused_damage, uintptr_t target, float damage )
+{
+
+	if ( !m_localplayer )
+		return;
+
+	auto isSelfPlayerDamage = m_localplayer == who_caused_damage;
+
+	auto isSelfPlayerTarget = m_localplayer == target;
+
+	auto player_vtable = *r_cast<uintptr_t*>( m_localplayer );
+
+	auto exist = false;
+
+	for ( auto& monster : game::manager::i( )->hunting_damage( ) )
+	{
+		if ( exist = ( monster.target_ptr == target ) )
+		{
+			auto exist_2 = false;
+			for ( auto & who_dam : monster.who_caused_damage )
+			{
+				if ( exist_2 = ( who_dam.entity == who_caused_damage ) )
+				{
+					who_dam.damage.push_back( damage );
+					who_dam.total_damage += damage;
+					break;
+				}
+			}
+			if ( !exist_2 )
+			{
+				monster.who_caused_damage
+				.push_back( {
+					who_caused_damage,
+					*r_cast<uintptr_t*>( who_caused_damage ) == player_vtable,
+					{ damage },
+					damage
+				} );
+			}
+			break;
+		}
+	}
+	if ( !exist )
+	{
+		auto target_entity  = r_cast<c_entity*>( target );
+
+		if ( target_entity->is_boss( ) )
+		{
+			game::manager::i( )->hunting_damage( )
+				.push_back( { 
+					target
+				} );
+
+			for ( auto &boss : m_bosses )
+			{
+				if ( uintptr_t(boss.ptr) == target )
+				{
+					strcpy_s( 
+						game::manager::i( )->hunting_damage( )
+						.back( ).name, 
+						boss.file );
+					break;
+				}
+
+			}
+
+			game::manager::i( )->hunting_damage( )
+				.back( )
+				.who_caused_damage
+				.push_back( {
+					who_caused_damage,
+					*r_cast<uintptr_t*>( who_caused_damage ) == player_vtable,
+					{ damage },
+					damage
+				} );
+
+
+		}
+
+	}
+
+
+
+	//std::ostringstream ss;
+	//ss << "Attack from" << ( ( isSelfPlayerDamage ) ? " SelfPlayer " : " " ) << "0x" << std::hex << std::uppercase << who_caused_damage << ", to target" <<
+	//	( ( isSelfPlayerTarget ) ? " SelfPlayer " : " " ) << "0x" << target << " Damage " << std::dec << (int)damage;
+
+	//std::cout << ss.str( ) << std::endl;;
 }

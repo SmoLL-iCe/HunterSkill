@@ -5,6 +5,7 @@
 #include "../thirdparty/minhook/include/MinHook.h"
 #include "../utils/utils.h"
 #include <intrin.h>
+#include "game_manager.h"
 
 template <typename A1, typename A2>
 inline bool hook( A1 detour, A2& r_original )
@@ -42,11 +43,11 @@ void __fastcall ReportProblem( DWORD code, const char* str )
 
 long __stdcall internal_handler( EXCEPTION_POINTERS* p_exception_info )
 {
-	auto* const p_context		= p_exception_info->ContextRecord;
+	auto* const p_context = p_exception_info->ContextRecord;
 
 	auto* const p_exception_rec = p_exception_info->ExceptionRecord;
 
-	u::display_context(p_context, p_exception_rec);
+	u::display_context( p_context, p_exception_rec );
 
 	return EXCEPTION_CONTINUE_SEARCH;
 }
@@ -61,6 +62,30 @@ MonsterHunterWorld.exe+23C677F - 74 1F                 - je MonsterHunterWorld.e
 
 
 */
+
+
+void* osub_1402C3C60 = reinterpret_cast<void*>( 0x1402C3C60 );
+//001402C3C60
+char __fastcall show_damage_4( __int64 pre_entity_target, __int64 whoCausedDamage, __int64 damage_info )
+{
+	if ( whoCausedDamage && pre_entity_target &&
+		mem::is_valid_read( pre_entity_target + 8 ) && mem::is_valid_read( whoCausedDamage ) && mem::is_valid_read( damage_info + 0xC ) )
+	{
+		auto target = *(uintptr_t*)( pre_entity_target + 8 );
+		auto entity = *(uintptr_t*)( whoCausedDamage );
+
+		if ( target && entity && target != entity )
+		{
+			auto last_damage = *(float*)( damage_info + 0xC ) + *(float*)( damage_info + 4 );
+			if ( last_damage > 0.f )
+			{
+				game::manager::i( )->set_damage( entity, target, last_damage );
+			}
+
+		}
+	}
+	return reinterpret_cast<decltype( show_damage_4 )*>( osub_1402C3C60 )( pre_entity_target, whoCausedDamage, damage_info );
+}
 
 bool hooks::init( )
 {
@@ -77,6 +102,11 @@ bool hooks::init( )
 		u8ptr( 0x14277BDD0 ),
 		u8ptr( 0x142776B90 ),
 		u8ptr( 0x14278CE20 ),
+
+		//hook damage
+		u8ptr( 0x14277C990 ),
+		u8ptr( 0x14276C9D0 ),
+		u8ptr( 0x14275DCD0 ),
 	};
 
 	for ( auto* ptr : ac )
@@ -87,13 +117,14 @@ bool hooks::init( )
 			ptr[ 0 ] = 0xc3;
 			VirtualProtect( ptr, 0x8, p, &p );
 		}
-	
+
 	}
 	//auto p_handle = AddVectoredExceptionHandler( 1, internal_handler );
 
 	//return true;
+	hook( show_damage_4, osub_1402C3C60 );
 	auto is_ok = hook( ReportProblem, options::reversed::i( )->ptr.func_crash );
-	
+
 	return is_ok;
 }
 
