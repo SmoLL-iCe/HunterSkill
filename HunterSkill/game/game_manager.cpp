@@ -200,15 +200,18 @@ void game::manager::update_entities( )
 			{
 				strcpy_s( ent.file, r_cast<char*>( ptr_str ) );
 			}
-
-		
-		
 		}
+
+		if (ent.is_player)
+		{
+			ent.type_ = *r_cast<uint32_t*>(ptr + 0xECC4);
+		}
+
 
 		if ( ent.is_boss )
 		{
 			auto exist = false;
-			for ( auto boss : m_bosses )
+			for (const auto boss : m_bosses )
 			{
 				if ( boss.ptr == ent.ptr )
 				{
@@ -238,6 +241,9 @@ void game::manager::set_damage( uintptr_t who_caused_damage, uintptr_t target, f
 	auto isSelfPlayerDamage = m_localplayer == who_caused_damage;
 
 	auto isSelfPlayerTarget = m_localplayer == target;
+
+	int type = -1;
+
 
 	auto player_vtable = *r_cast<uintptr_t*>( m_localplayer );
 
@@ -304,6 +310,19 @@ void game::manager::set_damage( uintptr_t who_caused_damage, uintptr_t target, f
 					damage
 				} );
 
+
+
+			if (mem::is_valid_read(target + 0x7670))
+			{
+				auto sub = *r_cast<uintptr_t*>(target + 0x7670);
+
+				if (sub != 0 && mem::is_valid_read(sub + 0x60))
+				{
+					game::manager::i()->hunting_damage()
+						.back()
+						.hp_max = *r_cast<float*>(sub + 0x60);
+				}
+			}
 
 		}
 

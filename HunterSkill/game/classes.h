@@ -83,11 +83,13 @@ namespace game
 	{
 		bool is_boss = false;
 		bool is_player = false;
+		int type_ = -1;
 		float health = 0.f;
 		float max_health = 0.f;
 		vec3 pos;
 		c_entity* ptr = nullptr;
 		char file[ 100 ]{ };
+
 	};
 	struct s_caused_damage
 	{
@@ -101,6 +103,7 @@ namespace game
 		uintptr_t target_ptr = 0;
 		char name[ 100 ]{ };
 		std::vector<s_caused_damage> who_caused_damage{ };
+		float hp_max = 0;
 	};
 
 }
