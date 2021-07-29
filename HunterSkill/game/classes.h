@@ -86,7 +86,7 @@ namespace game
 		int type_ = -1;
 		float health = 0.f;
 		float max_health = 0.f;
-		vec3 pos;
+		vec3 pos{ };
 		c_entity* ptr = nullptr;
 		char file[ 100 ]{ };
 
@@ -94,8 +94,10 @@ namespace game
 	struct s_caused_damage
 	{
 		uintptr_t entity = 0;
-		bool is_player = false;
-		std::vector<float> damage{ };
+		float best_hit = 0;
+		float last_hit = 0;
+		float low_hit = 0;
+		int hit_count = 0;
 		float total_damage = 0;
 	};
 	struct s_monster_damage

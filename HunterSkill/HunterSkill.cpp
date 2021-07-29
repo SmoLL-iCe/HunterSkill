@@ -75,27 +75,7 @@ void drawn_background(ImVec2 Pos, float around, ImVec2 Size = { 250,130 })
 bool show_estatics = false;
 bool auto_refresh = false;
 
-struct player_es {
-    uint32_t total=0, pc = 0;
-    float best = 0, mid = 0, low = 9999;
-    int type;
-    uintptr_t address = 0, monster_target = 0;
-    void clear()
-    {
-        monster_target = 0;
-        address = 0;
-        total = 0;
-        pc = 0;
-        best = 0;
-        mid = 0;
-        low = 9999999.f;
-    }
-    void change_monster()
-    {
-        monster_target = 0;
-    }
 
-}players_es[4]{0};
 
 std::string monster_;
 
@@ -107,22 +87,93 @@ void __stdcall overgay( )
         ImGui::Begin("##ESTATICS", &show_estatics, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize);
         {
 
-            ImGui::LabelText("##MonsterInfo", monster_.c_str());
-            for (byte i = 0; i < 4; i++)
+
+            auto myplayer = uintptr_t( game::manager::i()->get_self_player( ) );
+            if ( myplayer )
             {
-                std::string lbl_id = "##" + std::to_string(i);
-                //ImGui::LabelText(lbl_id.c_str(),);
-                if (players_es[i].total)
-                    ImGui::Text("Player(%d) : Total DMG : %d\n\tBEST %0.f\n\tMID %0.f\n\tLOW %0.f\n\ttype %d", (i + 1), players_es[i].total, players_es[i].best, players_es[i].mid, players_es[i].low, players_es[i].type);
+                for ( auto& monster : game::manager::i( )->hunting_damage( ) )
+                {
+                    ImGui::Text( getMonsterName( monster.name ).c_str( ) );
+
+
+                 
+                    //std::ostringstream ss;
+                    //ss <<  "=========================================================================================" << std::endl <<
+                    //    "\tTarget 0x" << monster.target_ptr << " name: " << getMonsterName( monster.name ) << std::endl;
+                    for ( auto &who_dam : monster.who_caused_damage )
+                    {
+                        int player_index = 0;
+                        uintptr_t size_player = 0x13F40;
+                        for ( ; player_index < 4; player_index++ )
+                        {
+                            if ( who_dam.entity == ( myplayer + ( size_player * player_index ) ) )
+                            {
+                                break;
+                            }
+                        }
+                        ++player_index;
+
+                        ImGui::Text( "\tPlayer(%d) : Total DMG : %d\tBEST %d\tLOW %d", player_index, (int)who_dam.total_damage, (int)who_dam.best_hit, (int)who_dam.low_hit );
+                        
+
+                        //ss << "\tAttack from" << ( ( isSelfPlayerDamage ) ? " self player " : ( who_dam.is_player ? " another player " : " " ) ) << "0x"
+                        //    << std::hex << std::uppercase << who_dam.entity << std::endl;
+                       
+
+ 
+
+                        //ss << "\tTotal Damage: " << std::dec << (int)who_dam.total_damage << std::endl;
+                        //ss << "-----------------------------------------------------------------------------------------" << std::endl;
+                        //if (players_es[0].monster_target == monster.target_ptr)
+                        //{
+                        //    monster_ = "Monster:" + getMonsterName(monster.name) + " HP: ";
+                        //    monster_.append(std::to_string((int)monster.hp_max));
+                        //    if (!who_dam.damage.empty())
+                        //        players_es[player_index].mid = who_dam.total_damage / who_dam.damage.size();
+
+                        //    players_es[player_index].total = (uint32_t)who_dam.total_damage;
+
+                        //}
+
+                    }
+                   // ss << "=========================================================================================" << std::endl;
+                    //std::cout << ss.str( ) << std::endl;
+
+       
+
+                }
+
+
             }
 
 
-            if (ImGui::Button("Chenge monster"))
-            {
-                players_es[0].change_monster();
-            }
-            ImGui::SameLine(150);
-            ImGui::Checkbox("Auto Refresh", &auto_refresh);
+
+
+
+
+
+
+
+
+
+
+
+            //ImGui::LabelText("##MonsterInfo", monster_.c_str());
+            //for (byte i = 0; i < 4; i++)
+            //{
+            //    std::string lbl_id = "##" + std::to_string(i);
+            //    //ImGui::LabelText(lbl_id.c_str(),);
+            //    if (players_es[i].total)
+            //        ImGui::Text("Player(%d) : Total DMG : %d\n\tBEST %0.f\n\tMID %0.f\n\tLOW %0.f\n\ttype %d", (i + 1), players_es[i].total, players_es[i].best, players_es[i].mid, players_es[i].low, players_es[i].type);
+            //}
+
+
+            //if (ImGui::Button("Chenge monster"))
+            //{
+            //    players_es[0].change_monster();
+            //}
+            //ImGui::SameLine(150);
+            //ImGui::Checkbox("Auto Refresh", &auto_refresh);
 
 
         }
@@ -291,92 +342,9 @@ int main( )
         if ( GetAsyncKeyState( VK_F1 ) & 0x8000  || auto_refresh)
         {
             system( "cls" );
-            auto myplayer = uintptr_t( game::manager::i()->get_self_player( ) );
-            if ( myplayer )
-            {
-                for ( auto& monster : game::manager::i( )->hunting_damage( ) )
-                {
-                    int player_index = 0;
-                    std::ostringstream ss;
-                    ss <<  "=========================================================================================" << std::endl <<
-                        "\tTarget 0x" << monster.target_ptr << " name: " << getMonsterName( monster.name ) << std::endl;
-                    for ( auto &who_dam : monster.who_caused_damage )
-                    {
-                        auto isSelfPlayerDamage = myplayer == who_dam.entity;
-                        
-                        if (isSelfPlayerDamage && players_es[0].address == 0)
-                        {
-                            players_es[0].address = myplayer;
-                            players_es[0].type = *reinterpret_cast<int*>(myplayer + 0xECC4);
-                            auto check = *reinterpret_cast<uintptr_t*>(myplayer);
 
 
-                            int add = 1;
-                            uintptr_t size_player = 0x13F40;
-                            
-                            for (int x = 1; add <= 3; x++)
-                            {
-                                auto value = *reinterpret_cast<uintptr_t*>(myplayer + (size_player * x));
-                                if (value == check)
-                                {
-                                    players_es[add].address = (myplayer + (size_player * x));
-                                    players_es[add].type = *reinterpret_cast<int*>(myplayer + (size_player * x) + 0xECC4);
-                                }
-                                if (x > 30)
-                                    break;
-                            }
-                        }
-                        if (players_es[0].monster_target == 0 && players_es[0].address == myplayer)
-                            players_es[0].monster_target = monster.target_ptr;
-                        
 
-                        ss << "\tAttack from" << ( ( isSelfPlayerDamage ) ? " self player " : ( who_dam.is_player ? " another player " : " " ) ) << "0x"
-                            << std::hex << std::uppercase << who_dam.entity << std::endl;
-                       
-                        for (int i = 0; i < 4; i++)
-                        {
-                            if (players_es[i].address == who_dam.entity)
-                            {
-                                player_index = i;
-                                break;
-                            }
-                        }
-
-                        for ( auto dan : who_dam.damage )
-                        {
-                            ss << "\t\tDamage hit: " << std::dec << (int)dan << std::endl;
-                            if (players_es[player_index].best < dan)
-                                players_es[player_index].best = dan;
-                            if (players_es[player_index].low > dan)
-                                players_es[player_index].low = dan;
-
-
-                        }
- 
-
-                        ss << "\tTotal Damage: " << std::dec << (int)who_dam.total_damage << std::endl;
-                        ss << "-----------------------------------------------------------------------------------------" << std::endl;
-                        if (players_es[0].monster_target == monster.target_ptr)
-                        {
-                            monster_ = "Monster:" + getMonsterName(monster.name) + " HP: ";
-                            monster_.append(std::to_string((int)monster.hp_max));
-                            if (!who_dam.damage.empty())
-                                players_es[player_index].mid = who_dam.total_damage / who_dam.damage.size();
-
-                            players_es[player_index].total = (uint32_t)who_dam.total_damage;
-
-                        }
-
-                    }
-                    ss << "=========================================================================================" << std::endl;
-                    std::cout << ss.str( ) << std::endl;
-
-       
-
-                }
-
-
-            }
 
         }
 
@@ -394,21 +362,13 @@ int main( )
             printf( "iniciou a batalha, agora limpar a lista.\n" );
             for ( auto& monster : game::manager::i( )->hunting_damage( ) )
             {
-                for ( auto &who_dam : monster.who_caused_damage )
-                {
-                    who_dam.damage.clear( );
-                    who_dam.damage.swap( who_dam.damage );
-                }
                 monster.who_caused_damage.clear( );
                 monster.who_caused_damage.swap( monster.who_caused_damage );
             }
             game::manager::i( )->hunting_damage( ).clear( );
             game::manager::i( )->hunting_damage( ).swap( game::manager::i( )->hunting_damage( ) );
             printf( "lista limpa.\n" );
-            for (auto& play : players_es)
-            {
-                play.clear();
-            }
+
 
         }
 

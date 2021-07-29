@@ -157,10 +157,11 @@ long __fastcall hkPresentDX12( IDXGISwapChain3* p_swap_chain, UINT sync_interval
 
 	impl::show_menu( );
 
-	ImGui::EndFrame( );
 
 	if ( p_overlay )
 		p_overlay( );
+
+	ImGui::EndFrame( );
 
 	DirectX12Interface::_FrameContext& CurrentFrameContext = DirectX12Interface::FrameContext[ p_swap_chain->GetCurrentBackBufferIndex( ) ];
 	CurrentFrameContext.CommandAllocator->Reset( );

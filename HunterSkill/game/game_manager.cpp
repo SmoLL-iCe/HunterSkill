@@ -245,7 +245,8 @@ void game::manager::set_damage( uintptr_t who_caused_damage, uintptr_t target, f
 	int type = -1;
 
 
-	auto player_vtable = *r_cast<uintptr_t*>( m_localplayer );
+	if ( *r_cast<uintptr_t*>( who_caused_damage ) != *r_cast<uintptr_t*>( m_localplayer ) )
+		return;
 
 	auto exist = false;
 
@@ -258,18 +259,29 @@ void game::manager::set_damage( uintptr_t who_caused_damage, uintptr_t target, f
 			{
 				if ( exist_2 = ( who_dam.entity == who_caused_damage ) )
 				{
-					who_dam.damage.push_back( damage );
+					if ( who_dam.best_hit < damage )
+						who_dam.best_hit = damage;
+
+					if ( who_dam.low_hit > damage )
+						who_dam.low_hit = damage;
+
+					who_dam.last_hit = damage;
+					++who_dam.hit_count;
+
 					who_dam.total_damage += damage;
 					break;
 				}
 			}
+
 			if ( !exist_2 )
 			{
 				monster.who_caused_damage
 				.push_back( {
 					who_caused_damage,
-					*r_cast<uintptr_t*>( who_caused_damage ) == player_vtable,
-					{ damage },
+					damage,
+					damage,
+					damage,
+					1,
 					damage
 				} );
 			}
@@ -300,29 +312,29 @@ void game::manager::set_damage( uintptr_t who_caused_damage, uintptr_t target, f
 
 			}
 
+			if ( mem::is_valid_read( target + 0x7670 ) )
+			{
+				auto sub = *r_cast<uintptr_t*>( target + 0x7670 );
+
+				if ( sub != 0 && mem::is_valid_read( sub + 0x60 ) )
+				{
+					game::manager::i( )->hunting_damage( )
+						.back( )
+						.hp_max = *r_cast<float*>( sub + 0x60 );
+				}
+			}
+
 			game::manager::i( )->hunting_damage( )
 				.back( )
 				.who_caused_damage
 				.push_back( {
 					who_caused_damage,
-					*r_cast<uintptr_t*>( who_caused_damage ) == player_vtable,
-					{ damage },
+					damage,
+					damage,
+					damage,
+					1,
 					damage
 				} );
-
-
-
-			if (mem::is_valid_read(target + 0x7670))
-			{
-				auto sub = *r_cast<uintptr_t*>(target + 0x7670);
-
-				if (sub != 0 && mem::is_valid_read(sub + 0x60))
-				{
-					game::manager::i()->hunting_damage()
-						.back()
-						.hp_max = *r_cast<float*>(sub + 0x60);
-				}
-			}
 
 		}
 
