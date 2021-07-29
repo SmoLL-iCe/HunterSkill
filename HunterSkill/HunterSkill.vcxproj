@@ -149,6 +149,7 @@
     <ClInclude Include="game\hooks.h" />
     <ClInclude Include="game\shared_config.h" />
     <ClInclude Include="header.h" />
+    <ClInclude Include="img_type.hpp" />
     <ClInclude Include="interface\d3d11_impl.h" />
     <ClInclude Include="interface\d3d12_impl.h" />
     <ClInclude Include="interface\menu.h" />

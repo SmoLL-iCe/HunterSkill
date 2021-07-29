@@ -10,6 +10,7 @@
 #include "thirdparty/imgui/imgui.h"
 #include "game/hooks.h"
 #include "Monster_names.hpp"
+#include "img_type.hpp"
 
 void drawn_bar(float hp, float max_hp, int size_, ImVec2 Pos)
 {
@@ -72,12 +73,17 @@ void drawn_background(ImVec2 Pos, float around, ImVec2 Size = { 250,130 })
     ImGui::GetOverlayDrawList()->AddRectFilled(Pos, { Pos.x + Size.x, Pos.y + Size.y }, ImGui::GetColorU32({0,0,0,0.5}), around);
 }
 
+
+// Global vars to edit later
 bool show_estatics = false;
-bool auto_refresh = false;
+bool less, av, best, icon, saved;
+int my_image_width = 0;
+int my_image_height = 0;
+ID3D12Resource* my_texture = NULL;
+D3D12_CPU_DESCRIPTOR_HANDLE my_texture_srv_cpu_handle{};
+D3D12_GPU_DESCRIPTOR_HANDLE my_texture_srv_gpu_handle{};
 
-
-
-std::string monster_;
+//std::string monster_;
 
 void __stdcall overgay( )
 {
@@ -93,10 +99,10 @@ void __stdcall overgay( )
             {
                 for ( auto& monster : game::manager::i( )->hunting_damage( ) )
                 {
-                    ImGui::Text( getMonsterName( monster.name ).c_str( ) );
+                    if (ImGui::TreeNode(getMonsterName(monster.name).c_str()))
+                    {                  
+                    //ImGui::Text( getMonsterName( monster.name ).c_str( ) );
 
-
-                 
                     //std::ostringstream ss;
                     //ss <<  "=========================================================================================" << std::endl <<
                     //    "\tTarget 0x" << monster.target_ptr << " name: " << getMonsterName( monster.name ) << std::endl;
@@ -112,8 +118,33 @@ void __stdcall overgay( )
                             }
                         }
                         ++player_index;
+                        float mid = 0;
 
-                        ImGui::Text( "\tPlayer(%d) : Total DMG : %d\tBEST %d\tLOW %d", player_index, (int)who_dam.total_damage, (int)who_dam.best_hit, (int)who_dam.low_hit );
+
+                        std::ostringstream show;
+
+                        show << "[" << who_dam.type << "]Player" << player_index << "- Total DMG " << (int)who_dam.total_damage;
+
+                        if (best)
+                            show << ", Best " << (int)who_dam.best_hit;
+                        if (av)
+                        {
+                            if (who_dam.hit_count > 0 && who_dam.total_damage > 0)
+                                mid = who_dam.total_damage / who_dam.hit_count;
+                            show << ", AV " << (int)mid;
+                        }
+                        if (less)
+                            show << ", LESS " << (int)who_dam.low_hit;
+                        
+                        if (icon)
+                        {
+                            ImGui::Image((ImTextureID)my_texture_srv_gpu_handle.ptr, ImVec2((float)my_image_width, (float)my_image_height));
+                            ImGui::SameLine(my_image_width + 10);
+                        }
+     
+                        ImGui::Text(show.str().c_str() );
+
+                        
                         
 
                         //ss << "\tAttack from" << ( ( isSelfPlayerDamage ) ? " self player " : ( who_dam.is_player ? " another player " : " " ) ) << "0x"
@@ -141,21 +172,11 @@ void __stdcall overgay( )
 
        
 
+                    }
                 }
 
 
             }
-
-
-
-
-
-
-
-
-
-
-
 
 
             //ImGui::LabelText("##MonsterInfo", monster_.c_str());
@@ -173,7 +194,16 @@ void __stdcall overgay( )
             //    players_es[0].change_monster();
             //}
             //ImGui::SameLine(150);
-            //ImGui::Checkbox("Auto Refresh", &auto_refresh);
+            if(ImGui::TreeNode("Options##MONSTER"))
+            {
+                ImGui::Checkbox("Auto Save", &saved); // none now
+                ImGui::Checkbox("Show Best damage", &best);
+                ImGui::Checkbox("Show average damage", &av);
+                ImGui::Checkbox("Show less damage", &less);
+                ImGui::Checkbox("Show ICON", &icon);
+
+            }
+
 
 
         }
@@ -315,7 +345,17 @@ int main( )
     {
         std::cout << "Have compatibily with Dx12\n";
         impl::d3d12::init();
+
+        // We need to pass a D3D12_CPU_DESCRIPTOR_HANDLE in ImTextureID, so make sure it will fit
+        static_assert(sizeof(ImTextureID) >= sizeof(D3D12_CPU_DESCRIPTOR_HANDLE), "D3D12_CPU_DESCRIPTOR_HANDLE is too large to fit in an ImTextureID");
+
+
         impl::d3d12::set_overlay(overgay);
+
+        // Load the texture from a file 
+        //bool ret = impl::d3d12::LoadTextureFromMemory(zero, &my_texture_srv_cpu_handle, &my_texture_srv_gpu_handle ,&my_texture, &my_image_width, &my_image_height); // crash
+        //IM_ASSERT(ret);
+
     }
     else
     {
@@ -332,14 +372,7 @@ int main( )
         if (GetAsyncKeyState(VK_F2) & 0x8000)
             show_estatics = !show_estatics;
 
-        if (GetAsyncKeyState(VK_F9) & 0x800)
-        {
-            auto_refresh = !auto_refresh;
-            std::cout << "auto refresh " << auto_refresh << std::endl;
-        }
-     
-
-        if ( GetAsyncKeyState( VK_F1 ) & 0x8000  || auto_refresh)
+        if ( GetAsyncKeyState( VK_F1 ) & 0x8000 )
         {
             system( "cls" );
 

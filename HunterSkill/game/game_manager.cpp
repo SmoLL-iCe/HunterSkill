@@ -254,9 +254,17 @@ void game::manager::set_damage( uintptr_t who_caused_damage, uintptr_t target, f
 	{
 		if ( exist = ( monster.target_ptr == target ) )
 		{
+
 			auto exist_2 = false;
 			for ( auto & who_dam : monster.who_caused_damage )
 			{
+
+				if (monster.hp <= 0)
+					continue;
+
+				if(mem::is_valid_read(who_dam.entity + 0xECC4))
+					who_dam.type = *r_cast<uint32_t*>(who_dam.entity +0xECC4);
+				
 				if ( exist_2 = ( who_dam.entity == who_caused_damage ) )
 				{
 					if ( who_dam.best_hit < damage )
@@ -321,6 +329,12 @@ void game::manager::set_damage( uintptr_t who_caused_damage, uintptr_t target, f
 					game::manager::i( )->hunting_damage( )
 						.back( )
 						.hp_max = *r_cast<float*>( sub + 0x60 );
+				}
+				if (sub != 0 && mem::is_valid_read(sub + 0x64))
+				{
+					game::manager::i()->hunting_damage()
+						.back()
+						.hp = *r_cast<float*>(sub + 0x64);
 				}
 			}
 

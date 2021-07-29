@@ -99,6 +99,7 @@ namespace game
 		float low_hit = 0;
 		int hit_count = 0;
 		float total_damage = 0;
+		int type = 0;
 	};
 	struct s_monster_damage
 	{
@@ -106,6 +107,7 @@ namespace game
 		char name[ 100 ]{ };
 		std::vector<s_caused_damage> who_caused_damage{ };
 		float hp_max = 0;
+		float hp = 0.f;
 	};
 
 }
