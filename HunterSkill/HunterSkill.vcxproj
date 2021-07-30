@@ -152,6 +152,7 @@
     <ClInclude Include="img_type.hpp" />
     <ClInclude Include="interface\d3d11_impl.h" />
     <ClInclude Include="interface\d3d12_impl.h" />
+    <ClInclude Include="interface\d3d12_load_img.hpp" />
     <ClInclude Include="interface\menu.h" />
     <ClInclude Include="interface\steam.h" />
     <ClInclude Include="interface\win32_impl.h" />

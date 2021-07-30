@@ -10,14 +10,17 @@
 #include "thirdparty/imgui/imgui.h"
 #include "game/hooks.h"
 #include "Monster_names.hpp"
-#include "img_type.hpp"
+#include "thirdparty/minhook/include/MinHook.h"
 
 void drawn_bar(float hp, float max_hp, int size_, ImVec2 Pos)
 {
     // BASE DRAWN
     ImGui::GetOverlayDrawList()->AddTriangleFilled(Pos, { Pos.x - 10, Pos.y + 5 }, { Pos.x, Pos.y + 10 }, ImGui::GetColorU32({ 0.219f, 0.223f, 0.219f,1.f }));
+
     ImGui::GetOverlayDrawList()->AddTriangleFilled({ Pos.x + size_, Pos.y }, { Pos.x + size_, Pos.y + 10 }, { Pos.x + size_ + 10, Pos.y + 5 }, ImGui::GetColorU32({ 0.219f, 0.223f, 0.219f,1.f }));
+
     ImGui::GetOverlayDrawList()->AddRectFilled({ Pos.x, Pos.y - 1 }, { Pos.x + size_, Pos.y + 11 }, ImGui::GetColorU32({ 0.219f, 0.223f, 0.219f,1.f }));
+
 
     if (hp <= 0)
         return;
@@ -75,139 +78,88 @@ void drawn_background(ImVec2 Pos, float around, ImVec2 Size = { 250,130 })
 
 
 // Global vars to edit later
-bool show_estatics = false;
+bool show_estatics = true;
 bool less, av, best, icon, saved;
-int my_image_width = 0;
-int my_image_height = 0;
-ID3D12Resource* my_texture = NULL;
-D3D12_CPU_DESCRIPTOR_HANDLE my_texture_srv_cpu_handle{};
-D3D12_GPU_DESCRIPTOR_HANDLE my_texture_srv_gpu_handle{};
+
 
 //std::string monster_;
 
 void __stdcall overgay( )
 {
 
-    if (show_estatics)
+    if ( show_estatics )
     {
-        ImGui::Begin("##ESTATICS", &show_estatics, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize);
+        ImGui::Begin( "##ESTATICS", &show_estatics, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize );
         {
 
 
-            auto myplayer = uintptr_t( game::manager::i()->get_self_player( ) );
+            auto myplayer = uintptr_t( game::manager::i( )->get_self_player( ) );
             if ( myplayer )
             {
                 for ( auto& monster : game::manager::i( )->hunting_damage( ) )
                 {
-                    if (ImGui::TreeNode(getMonsterName(monster.name).c_str()))
-                    {                  
-                    //ImGui::Text( getMonsterName( monster.name ).c_str( ) );
-
-                    //std::ostringstream ss;
-                    //ss <<  "=========================================================================================" << std::endl <<
-                    //    "\tTarget 0x" << monster.target_ptr << " name: " << getMonsterName( monster.name ) << std::endl;
-                    for ( auto &who_dam : monster.who_caused_damage )
+                    if ( ImGui::TreeNode( getMonsterName( monster.name ).c_str( ) ) )
                     {
-                        int player_index = 0;
-                        uintptr_t size_player = 0x13F40;
-                        for ( ; player_index < 4; player_index++ )
+
+                        for ( auto& who_dam : monster.who_caused_damage )
                         {
-                            if ( who_dam.entity == ( myplayer + ( size_player * player_index ) ) )
+                            int player_index = 0;
+                            uintptr_t size_player = 0x13F40;
+                            for ( ; player_index < 4; player_index++ )
                             {
-                                break;
+                                if ( who_dam.entity == ( myplayer + ( size_player * player_index ) ) )
+                                {
+                                    break;
+                                }
                             }
+                            ++player_index;
+                            float mid = 0;
+
+
+                            std::ostringstream show;
+
+                            show << "[" << who_dam.type << "]Player" << player_index << "- Total DMG " << (int)who_dam.total_damage;
+
+                            if ( best )
+                                show << ", Best " << (int)who_dam.best_hit;
+                            if ( av )
+                            {
+                                if ( who_dam.hit_count > 0 && who_dam.total_damage > 0 )
+                                    mid = who_dam.total_damage / who_dam.hit_count;
+                                show << ", AV " << (int)mid;
+                            }
+                            if ( less )
+                                show << ", LESS " << (int)who_dam.low_hit;
+
+                            if ( icon )
+                            {
+                               // ImGui::Image( (ImTextureID)my_texture_srv_gpu_handle.ptr, ImVec2( (float)my_image_width, (float)my_image_height ) );
+                               // ImGui::SameLine( my_image_width + 10 );
+                            }
+
+                            ImGui::Text( show.str( ).c_str( ) );
+
                         }
-                        ++player_index;
-                        float mid = 0;
 
-
-                        std::ostringstream show;
-
-                        show << "[" << who_dam.type << "]Player" << player_index << "- Total DMG " << (int)who_dam.total_damage;
-
-                        if (best)
-                            show << ", Best " << (int)who_dam.best_hit;
-                        if (av)
-                        {
-                            if (who_dam.hit_count > 0 && who_dam.total_damage > 0)
-                                mid = who_dam.total_damage / who_dam.hit_count;
-                            show << ", AV " << (int)mid;
-                        }
-                        if (less)
-                            show << ", LESS " << (int)who_dam.low_hit;
-                        
-                        if (icon)
-                        {
-                            ImGui::Image((ImTextureID)my_texture_srv_gpu_handle.ptr, ImVec2((float)my_image_width, (float)my_image_height));
-                            ImGui::SameLine(my_image_width + 10);
-                        }
-     
-                        ImGui::Text(show.str().c_str() );
-
-                        
-                        
-
-                        //ss << "\tAttack from" << ( ( isSelfPlayerDamage ) ? " self player " : ( who_dam.is_player ? " another player " : " " ) ) << "0x"
-                        //    << std::hex << std::uppercase << who_dam.entity << std::endl;
-                       
-
- 
-
-                        //ss << "\tTotal Damage: " << std::dec << (int)who_dam.total_damage << std::endl;
-                        //ss << "-----------------------------------------------------------------------------------------" << std::endl;
-                        //if (players_es[0].monster_target == monster.target_ptr)
-                        //{
-                        //    monster_ = "Monster:" + getMonsterName(monster.name) + " HP: ";
-                        //    monster_.append(std::to_string((int)monster.hp_max));
-                        //    if (!who_dam.damage.empty())
-                        //        players_es[player_index].mid = who_dam.total_damage / who_dam.damage.size();
-
-                        //    players_es[player_index].total = (uint32_t)who_dam.total_damage;
-
-                        //}
-
-                    }
-                   // ss << "=========================================================================================" << std::endl;
-                    //std::cout << ss.str( ) << std::endl;
-
-       
-
+                        ImGui::TreePop( );
                     }
                 }
 
 
             }
 
-
-            //ImGui::LabelText("##MonsterInfo", monster_.c_str());
-            //for (byte i = 0; i < 4; i++)
-            //{
-            //    std::string lbl_id = "##" + std::to_string(i);
-            //    //ImGui::LabelText(lbl_id.c_str(),);
-            //    if (players_es[i].total)
-            //        ImGui::Text("Player(%d) : Total DMG : %d\n\tBEST %0.f\n\tMID %0.f\n\tLOW %0.f\n\ttype %d", (i + 1), players_es[i].total, players_es[i].best, players_es[i].mid, players_es[i].low, players_es[i].type);
-            //}
-
-
-            //if (ImGui::Button("Chenge monster"))
-            //{
-            //    players_es[0].change_monster();
-            //}
-            //ImGui::SameLine(150);
-            if(ImGui::TreeNode("Options##MONSTER"))
+            if ( ImGui::TreeNode( "Options##MONSTER" ) )
             {
-                ImGui::Checkbox("Auto Save", &saved); // none now
-                ImGui::Checkbox("Show Best damage", &best);
-                ImGui::Checkbox("Show average damage", &av);
-                ImGui::Checkbox("Show less damage", &less);
-                ImGui::Checkbox("Show ICON", &icon);
-
+                ImGui::Checkbox( "Auto Save", &saved ); // none now
+                ImGui::Checkbox( "Show Best damage", &best );
+                ImGui::Checkbox( "Show average damage", &av );
+                ImGui::Checkbox( "Show less damage", &less );
+                ImGui::Checkbox( "Show ICON", &icon );
+                ImGui::TreePop( );
             }
 
-
-
         }
-        ImGui::End();
+        ImGui::End( );
     }
 
 
@@ -345,16 +297,8 @@ int main( )
     {
         std::cout << "Have compatibily with Dx12\n";
         impl::d3d12::init();
-
-        // We need to pass a D3D12_CPU_DESCRIPTOR_HANDLE in ImTextureID, so make sure it will fit
-        static_assert(sizeof(ImTextureID) >= sizeof(D3D12_CPU_DESCRIPTOR_HANDLE), "D3D12_CPU_DESCRIPTOR_HANDLE is too large to fit in an ImTextureID");
-
-
         impl::d3d12::set_overlay(overgay);
 
-        // Load the texture from a file 
-        //bool ret = impl::d3d12::LoadTextureFromMemory(zero, &my_texture_srv_cpu_handle, &my_texture_srv_gpu_handle ,&my_texture, &my_image_width, &my_image_height); // crash
-        //IM_ASSERT(ret);
 
     }
     else
@@ -368,17 +312,16 @@ int main( )
 
     while ( true )
     {
+
         Sleep( 100 );
+
+
         if (GetAsyncKeyState(VK_F2) & 0x8000)
             show_estatics = !show_estatics;
 
         if ( GetAsyncKeyState( VK_F1 ) & 0x8000 )
         {
             system( "cls" );
-
-
-
-
         }
 
         game::manager::i( )->clear_boss( );

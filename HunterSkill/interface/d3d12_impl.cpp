@@ -14,7 +14,10 @@
 #include "../utils/ntos.h"
 #define STB_IMAGE_IMPLEMENTATION
 #include "../stb_image.h"
-
+#include "../img_type.hpp"
+#include "../thirdparty/minhook/include/MinHook.h"
+#include <d3d11.h>
+#include "d3d12_load_img.hpp"
 extern t_render_overlay p_overlay;
 
 void impl::d3d12::set_overlay( t_render_overlay p )
@@ -28,6 +31,34 @@ PresentD3D12 oPresentD3D12 = nullptr;
 void *oExecuteCommandLists = nullptr;
 HRESULT( *oSignalD3D12 )( ID3D12CommandQueue*, ID3D12Fence*, UINT64 );
 
+
+struct s_loaded_images
+{
+	uint8_t*		buff				= nullptr;
+	int				size				= 0;
+	SIZE_T			ptr_handle_cpu_pos	= 0;
+	ID3D12Resource* texture				= nullptr;
+	int				width				= 0;
+	int				height				= 0;
+};
+
+#define IMG_NUM( val ) { val, sizeof val },
+s_loaded_images loaded_imgs[ ] = {
+	IMG_NUM( zero )
+	IMG_NUM( one )
+	IMG_NUM( two )
+	IMG_NUM( three )
+	IMG_NUM( four )
+	IMG_NUM( five )
+	IMG_NUM( six )
+	IMG_NUM( seven )
+	IMG_NUM( eigth )
+	IMG_NUM( nine )
+	IMG_NUM( ten )
+	IMG_NUM( eleven )
+	IMG_NUM( twelve )
+	IMG_NUM( thirteen )
+};
 
 namespace DirectX12Interface 
 {
@@ -51,10 +82,6 @@ namespace DirectX12Interface
 
 long __fastcall hkPresentDX12( IDXGISwapChain3* p_swap_chain, UINT sync_interval, UINT flags )
 {
-	//auto* wind = FindWindow( L"MT FRAMEWORK", nullptr );
-
-	//if ( !wind )
-	//	return oPresentD3D12( p_swap_chain, sync_interval, flags );
 
 	static bool init = false;
 
@@ -72,21 +99,11 @@ long __fastcall hkPresentDX12( IDXGISwapChain3* p_swap_chain, UINT sync_interval
 
 		if ( SUCCEEDED( p_swap_chain->GetDevice( __uuidof( ID3D12Device ), r_cast<void**>( &DirectX12Interface::Device ) ) ) )
 		{
-			ImGui::CreateContext( );
 
-			ImGuiIO& io = ImGui::GetIO( ); (void)io;
-
-			ImGui::GetIO( ).WantCaptureMouse || ImGui::GetIO( ).WantTextInput || ImGui::GetIO( ).WantCaptureKeyboard;
-
-			io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 
 			DXGI_SWAP_CHAIN_DESC Desc;
 			p_swap_chain->GetDesc( &Desc );
 			Desc.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
-
-
-			//Desc.OutputWindow = wind;
-			//Desc.Windowed = ( ( GetWindowLongPtr( wind, GWL_STYLE ) & WS_POPUP ) != 0 ) ? false : true;
 
 			DirectX12Interface::BuffersCounts		= Desc.BufferCount;
 			DirectX12Interface::FrameContext		= new DirectX12Interface::_FrameContext[ DirectX12Interface::BuffersCounts ];
@@ -98,6 +115,28 @@ long __fastcall hkPresentDX12( IDXGISwapChain3* p_swap_chain, UINT sync_interval
 		
 			if ( DirectX12Interface::Device->CreateDescriptorHeap( &DescriptorImGuiRender, IID_PPV_ARGS( &DirectX12Interface::DescriptorHeapImGuiRender ) ) != S_OK )
 				return oPresentD3D12( p_swap_chain, sync_interval, flags );
+
+			{
+
+
+				auto handle_increment = DirectX12Interface::Device->GetDescriptorHandleIncrementSize( D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV );
+				auto my_texture_srv_cpu_handle = DirectX12Interface::DescriptorHeapImGuiRender->GetCPUDescriptorHandleForHeapStart( );
+				int descriptor_index = 1;
+				for ( auto &img : loaded_imgs )
+				{
+					my_texture_srv_cpu_handle.ptr += ( handle_increment * descriptor_index );
+					img.ptr_handle_cpu_pos = my_texture_srv_cpu_handle.ptr;
+
+
+					if ( !LoadTextureFromMemory( img.buff, img.size, DirectX12Interface::Device, my_texture_srv_cpu_handle, &img.texture, &img.width, &img.height ) )
+					{
+						printf( "fail %d\n", descriptor_index );
+					}
+
+					++descriptor_index;
+				}
+
+			}
 
 			ID3D12CommandAllocator* Allocator;
 			if ( DirectX12Interface::Device->CreateCommandAllocator( D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS( &Allocator ) ) != S_OK )
@@ -134,10 +173,18 @@ long __fastcall hkPresentDX12( IDXGISwapChain3* p_swap_chain, UINT sync_interval
 				RTVHandle.ptr += RTVDescriptorSize;
 			}
 			
+
+			ImGui::CreateContext( );
+
+			ImGuiIO& io = ImGui::GetIO( ); (void)io;
+
+			ImGui::GetIO( ).WantCaptureMouse || ImGui::GetIO( ).WantTextInput || ImGui::GetIO( ).WantCaptureKeyboard;
+
+			io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 			RECT rct{ };
 			GetWindowRect( Desc.OutputWindow, &rct );
 			impl::screen( )[ 0 ] = (float)( rct.right	- rct.left );
-			impl::screen( )[ 01 ] = (float)( rct.bottom	- rct.top );
+			impl::screen( )[ 1 ] = (float)( rct.bottom	- rct.top );
 
 			ImGui_ImplWin32_Init( Desc.OutputWindow );
 			ImGui_ImplDX12_Init( DirectX12Interface::Device, DirectX12Interface::BuffersCounts, DXGI_FORMAT_R8G8B8A8_UNORM, DirectX12Interface::DescriptorHeapImGuiRender, DirectX12Interface::DescriptorHeapImGuiRender->GetCPUDescriptorHandleForHeapStart( ), DirectX12Interface::DescriptorHeapImGuiRender->GetGPUDescriptorHandleForHeapStart( ) );
@@ -154,6 +201,13 @@ long __fastcall hkPresentDX12( IDXGISwapChain3* p_swap_chain, UINT sync_interval
 	ImGui_ImplDX12_NewFrame( );
 	ImGui_ImplWin32_NewFrame( );
 	ImGui::NewFrame( );
+
+
+	ImGui::Begin( "5676" );
+	for ( auto& img : loaded_imgs )
+		ImGui::Image( r_cast<ImTextureID>( img.ptr_handle_cpu_pos ), ImVec2( s_cast<float>( img.width ), s_cast<float>( img.height ) ) );
+
+	ImGui::End( );
 
 	impl::show_menu( );
 
@@ -209,9 +263,9 @@ HRESULT hkResizeBuffers( IDXGISwapChain3* pSwapChain, UINT BufferCount, UINT Wid
 	return r_cast<decltype( hkResizeBuffers )*>( oResizeBuffers )( pSwapChain, BufferCount, Width, Height, NewFormat, SwapChainFlags );
 }
 
-
 void impl::d3d12::init( )
 {
+
 	auto ptr = steam_overlay::get_ptr( );
 
 	oPresentD3D12 = reinterpret_cast<decltype( oPresentD3D12 )>( *ptr );
@@ -227,332 +281,3 @@ void impl::d3d12::init( )
 	}
 
 }
-
-// Simple helper function to load an image into a DX12 texture with common settings
-// Returns true on success, with the SRV CPU handle having an SRV for the newly-created texture placed in it (srv_cpu_handle must be a handle in a valid descriptor heap)
-bool impl::d3d12::LoadTextureFromFile(const char* filename, ID3D12Device* d3d_device, D3D12_CPU_DESCRIPTOR_HANDLE srv_cpu_handle, ID3D12Resource** out_tex_resource, int* out_width, int* out_height)
-{
-	// Load from disk into a raw RGBA buffer
-	int image_width = 0;
-	int image_height = 0;
-	unsigned char* image_data = stbi_load(filename, &image_width, &image_height, NULL, 4);
-	if (image_data == NULL)
-		return false;
-
-	// Create texture resource
-	D3D12_HEAP_PROPERTIES props;
-	memset(&props, 0, sizeof(D3D12_HEAP_PROPERTIES));
-	props.Type = D3D12_HEAP_TYPE_DEFAULT;
-	props.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
-	props.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
-
-	D3D12_RESOURCE_DESC desc;
-	ZeroMemory(&desc, sizeof(desc));
-	desc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
-	desc.Alignment = 0;
-	desc.Width = image_width;
-	desc.Height = image_height;
-	desc.DepthOrArraySize = 1;
-	desc.MipLevels = 1;
-	desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-	desc.SampleDesc.Count = 1;
-	desc.SampleDesc.Quality = 0;
-	desc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
-	desc.Flags = D3D12_RESOURCE_FLAG_NONE;
-
-	ID3D12Resource* pTexture = NULL;
-	d3d_device->CreateCommittedResource(&props, D3D12_HEAP_FLAG_NONE, &desc,
-		D3D12_RESOURCE_STATE_COPY_DEST, NULL, IID_PPV_ARGS(&pTexture));
-
-	// Create a temporary upload resource to move the data in
-	UINT uploadPitch = (image_width * 4 + D3D12_TEXTURE_DATA_PITCH_ALIGNMENT - 1u) & ~(D3D12_TEXTURE_DATA_PITCH_ALIGNMENT - 1u);
-	UINT uploadSize = image_height * uploadPitch;
-	desc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
-	desc.Alignment = 0;
-	desc.Width = uploadSize;
-	desc.Height = 1;
-	desc.DepthOrArraySize = 1;
-	desc.MipLevels = 1;
-	desc.Format = DXGI_FORMAT_UNKNOWN;
-	desc.SampleDesc.Count = 1;
-	desc.SampleDesc.Quality = 0;
-	desc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
-	desc.Flags = D3D12_RESOURCE_FLAG_NONE;
-
-	props.Type = D3D12_HEAP_TYPE_UPLOAD;
-	props.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
-	props.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
-
-	ID3D12Resource* uploadBuffer = NULL;
-	HRESULT hr = d3d_device->CreateCommittedResource(&props, D3D12_HEAP_FLAG_NONE, &desc,
-		D3D12_RESOURCE_STATE_GENERIC_READ, NULL, IID_PPV_ARGS(&uploadBuffer));
-	IM_ASSERT(SUCCEEDED(hr));
-
-	// Write pixels into the upload resource
-	void* mapped = NULL;
-	D3D12_RANGE range = { 0, uploadSize };
-	hr = uploadBuffer->Map(0, &range, &mapped);
-	IM_ASSERT(SUCCEEDED(hr));
-	for (int y = 0; y < image_height; y++)
-		memcpy((void*)((uintptr_t)mapped + y * uploadPitch), image_data + y * image_width * 4, image_width * 4);
-	uploadBuffer->Unmap(0, &range);
-
-	// Copy the upload resource content into the real resource
-	D3D12_TEXTURE_COPY_LOCATION srcLocation = {};
-	srcLocation.pResource = uploadBuffer;
-	srcLocation.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
-	srcLocation.PlacedFootprint.Footprint.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-	srcLocation.PlacedFootprint.Footprint.Width = image_width;
-	srcLocation.PlacedFootprint.Footprint.Height = image_height;
-	srcLocation.PlacedFootprint.Footprint.Depth = 1;
-	srcLocation.PlacedFootprint.Footprint.RowPitch = uploadPitch;
-
-	D3D12_TEXTURE_COPY_LOCATION dstLocation = {};
-	dstLocation.pResource = pTexture;
-	dstLocation.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
-	dstLocation.SubresourceIndex = 0;
-
-	D3D12_RESOURCE_BARRIER barrier = {};
-	barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-	barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-	barrier.Transition.pResource = pTexture;
-	barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-	barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COPY_DEST;
-	barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
-
-	// Create a temporary command queue to do the copy with
-	ID3D12Fence* fence = NULL;
-	hr = d3d_device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence));
-	IM_ASSERT(SUCCEEDED(hr));
-
-	HANDLE event = CreateEvent(0, 0, 0, 0);
-	IM_ASSERT(event != NULL);
-
-	D3D12_COMMAND_QUEUE_DESC queueDesc = {};
-	queueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
-	queueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
-	queueDesc.NodeMask = 1;
-
-	ID3D12CommandQueue* cmdQueue = NULL;
-	hr = d3d_device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&cmdQueue));
-	IM_ASSERT(SUCCEEDED(hr));
-
-	ID3D12CommandAllocator* cmdAlloc = NULL;
-	hr = d3d_device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&cmdAlloc));
-	IM_ASSERT(SUCCEEDED(hr));
-
-	ID3D12GraphicsCommandList* cmdList = NULL;
-	hr = d3d_device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, cmdAlloc, NULL, IID_PPV_ARGS(&cmdList));
-	IM_ASSERT(SUCCEEDED(hr));
-
-	cmdList->CopyTextureRegion(&dstLocation, 0, 0, 0, &srcLocation, NULL);
-	cmdList->ResourceBarrier(1, &barrier);
-
-	hr = cmdList->Close();
-	IM_ASSERT(SUCCEEDED(hr));
-
-	// Execute the copy
-	cmdQueue->ExecuteCommandLists(1, (ID3D12CommandList* const*)&cmdList);
-	hr = cmdQueue->Signal(fence, 1);
-	IM_ASSERT(SUCCEEDED(hr));
-
-	// Wait for everything to complete
-	fence->SetEventOnCompletion(1, event);
-	WaitForSingleObject(event, INFINITE);
-
-	// Tear down our temporary command queue and release the upload resource
-	cmdList->Release();
-	cmdAlloc->Release();
-	cmdQueue->Release();
-	CloseHandle(event);
-	fence->Release();
-	uploadBuffer->Release();
-
-	// Create a shader resource view for the texture
-	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc;
-	ZeroMemory(&srvDesc, sizeof(srvDesc));
-	srvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
-	srvDesc.Texture2D.MipLevels = desc.MipLevels;
-	srvDesc.Texture2D.MostDetailedMip = 0;
-	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-	d3d_device->CreateShaderResourceView(pTexture, &srvDesc, srv_cpu_handle);
-
-	// Return results
-	*out_tex_resource = pTexture;
-	*out_width = image_width;
-	*out_height = image_height;
-	stbi_image_free(image_data);
-
-	return true;
-}
-
-
-bool impl::d3d12::LoadTextureFromMemory(const uint8_t* image_data, D3D12_CPU_DESCRIPTOR_HANDLE* srv_cpu_handle, D3D12_GPU_DESCRIPTOR_HANDLE* srv_gpu_handle, ID3D12Resource** out_tex_resource, int* out_width, int* out_height)
-{
-	int image_width, image_height;
-
-
-	// Get CPU/GPU handles for the shader resource view
-	// Normally your engine will have some sort of allocator for these - here we assume that there's an SRV descriptor heap in
-	// g_pd3dSrvDescHeap with at least two descriptors allocated, and descriptor 1 is unused
-	UINT handle_increment = DirectX12Interface::Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
-	int descriptor_index = 1; // The descriptor table index to use (not normally a hard-coded constant, but in this case we'll assume we have slot 1 reserved for us)
-	D3D12_CPU_DESCRIPTOR_HANDLE my_texture_srv_cpu_handle = DirectX12Interface::DescriptorHeapBackBuffers->GetCPUDescriptorHandleForHeapStart(); //->GetCPUDescriptorHandleForHeapStart();
-	my_texture_srv_cpu_handle.ptr += (handle_increment * descriptor_index);
-	D3D12_GPU_DESCRIPTOR_HANDLE my_texture_srv_gpu_handle = DirectX12Interface::DescriptorHeapImGuiRender->GetGPUDescriptorHandleForHeapStart();
-	my_texture_srv_gpu_handle.ptr += (handle_increment * descriptor_index);
-
-
-	// Create texture resource
-	D3D12_HEAP_PROPERTIES props;
-	memset(&props, 0, sizeof(D3D12_HEAP_PROPERTIES));
-	props.Type = D3D12_HEAP_TYPE_DEFAULT;
-	props.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
-	props.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
-
-	D3D12_RESOURCE_DESC desc;
-	ZeroMemory(&desc, sizeof(desc));
-	desc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
-	desc.Alignment = 0;
-	desc.Width = image_width;
-	desc.Height = image_height;
-	desc.DepthOrArraySize = 1;
-	desc.MipLevels = 1;
-	desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-	desc.SampleDesc.Count = 1;
-	desc.SampleDesc.Quality = 0;
-	desc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
-	desc.Flags = D3D12_RESOURCE_FLAG_NONE;
-
-	ID3D12Resource* pTexture = NULL;
-
-	DirectX12Interface::Device->CreateCommittedResource(&props, D3D12_HEAP_FLAG_NONE, &desc,
-		D3D12_RESOURCE_STATE_COPY_DEST, NULL, IID_PPV_ARGS(&pTexture));
-
-	// Create a temporary upload resource to move the data in
-	UINT uploadPitch = (image_width * 4 + D3D12_TEXTURE_DATA_PITCH_ALIGNMENT - 1u) & ~(D3D12_TEXTURE_DATA_PITCH_ALIGNMENT - 1u);
-	UINT uploadSize = image_height * uploadPitch;
-	desc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
-	desc.Alignment = 0;
-	desc.Width = uploadSize;
-	desc.Height = 1;
-	desc.DepthOrArraySize = 1;
-	desc.MipLevels = 1;
-	desc.Format = DXGI_FORMAT_UNKNOWN;
-	desc.SampleDesc.Count = 1;
-	desc.SampleDesc.Quality = 0;
-	desc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
-	desc.Flags = D3D12_RESOURCE_FLAG_NONE;
-
-	props.Type = D3D12_HEAP_TYPE_UPLOAD;
-	props.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
-	props.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
-
-	ID3D12Resource* uploadBuffer = NULL;
-
-	HRESULT hr = DirectX12Interface::Device->CreateCommittedResource(&props, D3D12_HEAP_FLAG_NONE, &desc,
-		D3D12_RESOURCE_STATE_GENERIC_READ, NULL, IID_PPV_ARGS(&uploadBuffer));
-	IM_ASSERT(SUCCEEDED(hr));
-
-	// Write pixels into the upload resource
-	void* mapped = NULL;
-	D3D12_RANGE range = { 0, uploadSize };
-	hr = uploadBuffer->Map(0, &range, &mapped);
-	IM_ASSERT(SUCCEEDED(hr));
-	for (int y = 0; y < image_height; y++)
-		memcpy((void*)((uintptr_t)mapped + y * uploadPitch), image_data + y * image_width * 4, image_width * 4);
-	uploadBuffer->Unmap(0, &range);
-
-	// Copy the upload resource content into the real resource
-	D3D12_TEXTURE_COPY_LOCATION srcLocation = {};
-	srcLocation.pResource = uploadBuffer;
-	srcLocation.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
-	srcLocation.PlacedFootprint.Footprint.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-	srcLocation.PlacedFootprint.Footprint.Width = image_width;
-	srcLocation.PlacedFootprint.Footprint.Height = image_height;
-	srcLocation.PlacedFootprint.Footprint.Depth = 1;
-	srcLocation.PlacedFootprint.Footprint.RowPitch = uploadPitch;
-
-	D3D12_TEXTURE_COPY_LOCATION dstLocation = {};
-	dstLocation.pResource = pTexture;
-	dstLocation.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
-	dstLocation.SubresourceIndex = 0;
-
-	D3D12_RESOURCE_BARRIER barrier = {};
-	barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-	barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-	barrier.Transition.pResource = pTexture;
-	barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-	barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COPY_DEST;
-	barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
-
-	// Create a temporary command queue to do the copy with
-	ID3D12Fence* fence = NULL;
-	hr = DirectX12Interface::Device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence));
-	IM_ASSERT(SUCCEEDED(hr));
-
-	HANDLE event = CreateEvent(0, 0, 0, 0);
-	IM_ASSERT(event != NULL);
-
-	D3D12_COMMAND_QUEUE_DESC queueDesc = {};
-	queueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
-	queueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
-	queueDesc.NodeMask = 1;
-
-	ID3D12CommandQueue* cmdQueue = NULL;
-	hr = DirectX12Interface::Device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&cmdQueue));
-	IM_ASSERT(SUCCEEDED(hr));
-
-	ID3D12CommandAllocator* cmdAlloc = NULL;
-	hr = DirectX12Interface::Device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&cmdAlloc));
-	IM_ASSERT(SUCCEEDED(hr));
-
-	ID3D12GraphicsCommandList* cmdList = NULL;
-	hr = DirectX12Interface::Device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, cmdAlloc, NULL, IID_PPV_ARGS(&cmdList));
-	IM_ASSERT(SUCCEEDED(hr));
-
-	cmdList->CopyTextureRegion(&dstLocation, 0, 0, 0, &srcLocation, NULL);
-	cmdList->ResourceBarrier(1, &barrier);
-
-	hr = cmdList->Close();
-	IM_ASSERT(SUCCEEDED(hr));
-
-	// Execute the copy
-	cmdQueue->ExecuteCommandLists(1, (ID3D12CommandList* const*)&cmdList);
-	hr = cmdQueue->Signal(fence, 1);
-	IM_ASSERT(SUCCEEDED(hr));
-
-	// Wait for everything to complete
-	fence->SetEventOnCompletion(1, event);
-	WaitForSingleObject(event, INFINITE);
-
-	// Tear down our temporary command queue and release the upload resource
-	cmdList->Release();
-	cmdAlloc->Release();
-	cmdQueue->Release();
-	CloseHandle(event);
-	fence->Release();
-	uploadBuffer->Release();
-
-	// Create a shader resource view for the texture
-	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc;
-	ZeroMemory(&srvDesc, sizeof(srvDesc));
-	srvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
-	srvDesc.Texture2D.MipLevels = desc.MipLevels;
-	srvDesc.Texture2D.MostDetailedMip = 0;
-	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-	DirectX12Interface::Device->CreateShaderResourceView(pTexture, &srvDesc, my_texture_srv_cpu_handle);
-
-	// Return results
-	*out_tex_resource = pTexture;
-	*out_width = image_width;
-	*out_height = image_height;
-	//stbi_image_free(image_data);
-	*srv_cpu_handle = my_texture_srv_cpu_handle;
-	*srv_gpu_handle = my_texture_srv_gpu_handle;
-	return true;
-}
-
-

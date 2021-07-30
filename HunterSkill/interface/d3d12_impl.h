@@ -7,7 +7,7 @@ namespace impl
 		void init();
 		float* screen( );
 		void set_overlay( t_render_overlay p );
-		bool LoadTextureFromFile(const char* filename, ID3D12Device* d3d_device, D3D12_CPU_DESCRIPTOR_HANDLE srv_cpu_handle, ID3D12Resource** out_tex_resource, int* out_width, int* out_height);
-		bool LoadTextureFromMemory(const uint8_t* image_data, D3D12_CPU_DESCRIPTOR_HANDLE* srv_cpu_handle, D3D12_GPU_DESCRIPTOR_HANDLE* srv_gpu_handle, ID3D12Resource** out_tex_resource, int* out_width, int* out_height);
+		bool LoadTextureFromFile( const char* filename, ID3D12Device* d3d_device, D3D12_CPU_DESCRIPTOR_HANDLE srv_cpu_handle, ID3D12Resource** out_tex_resource, int* out_width, int* out_height );
+		bool LoadTextureFromMemory( const uint8_t* image, size_t size, ID3D12Device* d3d_device, D3D12_CPU_DESCRIPTOR_HANDLE srv_cpu_handle, ID3D12Resource** out_tex_resource, int* out_width, int* out_height );
 	}
 }
