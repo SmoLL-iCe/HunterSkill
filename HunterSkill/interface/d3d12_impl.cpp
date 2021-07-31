@@ -20,10 +20,15 @@
 #include "d3d12_load_img.hpp"
 #include "../fonts.hpp"
 extern t_render_overlay p_overlay;
-
+t_render_overlay p_menu = nullptr;
 void impl::d3d12::set_overlay( t_render_overlay p )
 {
 	p_overlay = p;
+}
+
+void impl::d3d12::set_menu(t_render_overlay p)
+{
+	p_menu = p;
 }
 
 using PresentD3D12 =  long( __fastcall* ) ( IDXGISwapChain*, UINT, UINT );
@@ -220,14 +225,15 @@ long __fastcall hkPresentDX12( IDXGISwapChain3* p_swap_chain, UINT sync_interval
 	ImGui::NewFrame( );
 
 	//ImGui::PushFont(font1);
-	ImGui::Begin( "5676" );
-	for ( auto& img : loaded_imgs )
-		ImGui::Image( r_cast<ImTextureID>( img.ptr_handle_cpu_pos ), ImVec2( s_cast<float>( img.width ), s_cast<float>( img.height ) ) );
+	//ImGui::Begin( "5676" );
+	//for ( auto& img : loaded_imgs )
+	//		ImGui::Image( r_cast<ImTextureID>( img.ptr_handle_cpu_pos ), ImVec2( s_cast<float>( img.width ), s_cast<float>( img.height ) ) );
 
-	ImGui::End( );
+	//ImGui::End( );
 
-	impl::show_menu( );
-
+	// impl::show_menu();
+	if (p_menu)
+		p_menu();
 
 	if ( p_overlay )
 		p_overlay( );

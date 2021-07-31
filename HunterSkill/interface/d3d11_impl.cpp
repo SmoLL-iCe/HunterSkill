@@ -14,10 +14,13 @@ static Present oPresent = NULL;
 
 t_render_overlay p_overlay = nullptr;
 
+
 void impl::d3d11::set_overlay( t_render_overlay p )
 {
 	p_overlay = p;
 }
+
+
 
 D3D11_VIEWPORT viewport = { };
 long __stdcall hkPresent11( IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags )
