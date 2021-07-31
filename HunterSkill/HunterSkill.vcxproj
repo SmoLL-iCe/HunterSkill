@@ -144,6 +144,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="fonts.hpp" />
     <ClInclude Include="game\classes.h" />
     <ClInclude Include="game\game_manager.h" />
     <ClInclude Include="game\hooks.h" />

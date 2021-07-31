@@ -6,20 +6,21 @@
 #include "game/shared_config.h"
 #include "game/game_manager.h"
 #include "utils/mem.h"
-#include <sstream>
+
 #include "thirdparty/imgui/imgui.h"
 #include "game/hooks.h"
 #include "Monster_names.hpp"
 #include "thirdparty/minhook/include/MinHook.h"
 
+
 void drawn_bar(float hp, float max_hp, int size_, ImVec2 Pos)
 {
     // BASE DRAWN
-    ImGui::GetOverlayDrawList()->AddTriangleFilled(Pos, { Pos.x - 10, Pos.y + 5 }, { Pos.x, Pos.y + 10 }, ImGui::GetColorU32({ 0.219f, 0.223f, 0.219f,1.f }));
+    ImGui::GetOverlayDrawList()->AddTriangleFilled(Pos, { Pos.x - 15, Pos.y + 7.5f }, { Pos.x, Pos.y + 10 }, ImGui::GetColorU32({ 0.219f, 0.223f, 0.219f,1.f }));
 
-    ImGui::GetOverlayDrawList()->AddTriangleFilled({ Pos.x + size_, Pos.y }, { Pos.x + size_, Pos.y + 10 }, { Pos.x + size_ + 10, Pos.y + 5 }, ImGui::GetColorU32({ 0.219f, 0.223f, 0.219f,1.f }));
+    ImGui::GetOverlayDrawList()->AddTriangleFilled({ Pos.x + size_, Pos.y }, { Pos.x + size_, Pos.y + 15 }, { Pos.x + size_ + 10, Pos.y + 7.5f }, ImGui::GetColorU32({ 0.219f, 0.223f, 0.219f,1.f }));
 
-    ImGui::GetOverlayDrawList()->AddRectFilled({ Pos.x, Pos.y - 1 }, { Pos.x + size_, Pos.y + 11 }, ImGui::GetColorU32({ 0.219f, 0.223f, 0.219f,1.f }));
+    ImGui::GetOverlayDrawList()->AddRectFilled({ Pos.x, Pos.y - 1 }, { Pos.x + size_, Pos.y + 16 }, ImGui::GetColorU32({ 0.219f, 0.223f, 0.219f,1.f }));
 
 
     if (hp <= 0)
@@ -45,9 +46,9 @@ void drawn_bar(float hp, float max_hp, int size_, ImVec2 Pos)
     {
         auto x = size_ * (percent / 100.f);
         //printf("%f\n", x);
-        ImGui::GetOverlayDrawList()->AddTriangleFilled(Pos, { Pos.x - 10, Pos.y + 5 }, { Pos.x, Pos.y + 10 }, ImGui::GetColorU32(Color_));
-        ImGui::GetOverlayDrawList()->AddTriangleFilled({ Pos.x + x, Pos.y }, { Pos.x + x, Pos.y + 10 }, { Pos.x + x + 10, Pos.y + 5 }, ImGui::GetColorU32(Color_));
-        ImGui::GetOverlayDrawList()->AddRectFilled({ Pos.x, Pos.y - 1 }, { Pos.x + x, Pos.y + 11 }, ImGui::GetColorU32(Color_));
+        ImGui::GetOverlayDrawList()->AddTriangleFilled(Pos, { Pos.x - 15, Pos.y + 7.5f }, { Pos.x, Pos.y + 15 }, ImGui::GetColorU32(Color_));
+        ImGui::GetOverlayDrawList()->AddTriangleFilled({ Pos.x + x, Pos.y }, { Pos.x + x, Pos.y + 15 }, { Pos.x + x + 15, Pos.y + 7.5f }, ImGui::GetColorU32(Color_));
+        ImGui::GetOverlayDrawList()->AddRectFilled({ Pos.x, Pos.y - 1 }, { Pos.x + x, Pos.y + 16 }, ImGui::GetColorU32(Color_));
     }
 }
 
@@ -64,10 +65,14 @@ std::string getMonsterName( std::string file_monster )
         size_t find = mh.find( file_monster );
         if ( find != std::string::npos )
         {
-            file_monster = mh.substr( file_monster.length( ) );
+            file_monster = mh.substr( file_monster.length( )+1 );
             break;
         }
     }
+
+    if (!file_monster.compare("em001_00 Rathian"))
+        file_monster.clear();
+
     return file_monster;
 }
 
@@ -86,6 +91,7 @@ bool less, av, best, icon, saved;
 
 void __stdcall overgay( )
 {
+    s_loaded_images* imgs = impl::d3d12::load_imgs();
 
     if ( show_estatics )
     {
@@ -114,22 +120,28 @@ void __stdcall overgay( )
                             }
                             ++player_index;
                             float mid = 0;
+                            if (icon)
+                            {
+                                ImGui::Image(r_cast<ImTextureID>(imgs[who_dam.type].ptr_handle_cpu_pos), ImVec2(s_cast<float>(imgs[who_dam.type].width/2), s_cast<float>(imgs[who_dam.type].height / 2)));
 
+                                ImGui::SameLine(55);
+                            }
+                               // 
 
                             std::ostringstream show;
 
-                            show << "[" << who_dam.type << "]Player" << player_index << "- Total DMG " << (int)who_dam.total_damage;
+                            show  << " Player" << player_index << "-Total DMG:" << (int)who_dam.total_damage;
 
                             if ( best )
-                                show << ", Best " << (int)who_dam.best_hit;
+                                show << ", Best:" << (int)who_dam.best_hit;
                             if ( av )
                             {
                                 if ( who_dam.hit_count > 0 && who_dam.total_damage > 0 )
                                     mid = who_dam.total_damage / who_dam.hit_count;
-                                show << ", AV " << (int)mid;
+                                show << ", AV:" << (int)mid;
                             }
                             if ( less )
-                                show << ", LESS " << (int)who_dam.low_hit;
+                                show << ", LESS:" << (int)who_dam.low_hit;
 
                             if ( icon )
                             {
@@ -209,7 +221,11 @@ void __stdcall overgay( )
  
             auto file_monster = getMonsterName( entity.file );
    
-            if (distance > 100000)
+            if (file_monster.empty())
+                return;
+
+
+            if (distance > 10000)
                 return;
 
     		std::ostringstream ss;
@@ -217,13 +233,13 @@ void __stdcall overgay( )
 
             drawn_background({ out.x, out.y }, 15 , {210, 90});
 
-            drawn_bar(entity.health, entity.max_health, 180, { out.x + 15, out.y + 15 });
+            drawn_bar(entity.health, entity.max_health, 170, { out.x + 20, out.y + 10 });
 
-            ImGui::GetOverlayDrawList()->AddText(ImVec2(out.x + 25, out.y + 13),
+            ImGui::GetOverlayDrawList()->AddText(ImVec2(out.x + 25, out.y + 5),
                 ImGui::GetColorU32({ 1,1,1,1 }), hp_hud.c_str());
 
 
-            ImGui::GetOverlayDrawList( )->AddText( ImVec2( out.x + 10, out.y+30 ),
+            ImGui::GetOverlayDrawList( )->AddText( ImVec2( out.x + 10, out.y+25 ),
                 ImGui::GetColorU32({1,1,1,1}), ss.str().c_str());
          
 
@@ -298,8 +314,6 @@ int main( )
         std::cout << "Have compatibily with Dx12\n";
         impl::d3d12::init();
         impl::d3d12::set_overlay(overgay);
-
-
     }
     else
     {

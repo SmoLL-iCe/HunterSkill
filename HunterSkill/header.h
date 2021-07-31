@@ -3,6 +3,7 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <sstream>
 #define r_cast reinterpret_cast
 #define s_cast static_cast
 #define d_cast dynamic_cast

@@ -18,6 +18,7 @@
 #include "../thirdparty/minhook/include/MinHook.h"
 #include <d3d11.h>
 #include "d3d12_load_img.hpp"
+#include "../fonts.hpp"
 extern t_render_overlay p_overlay;
 
 void impl::d3d12::set_overlay( t_render_overlay p )
@@ -32,15 +33,7 @@ void *oExecuteCommandLists = nullptr;
 HRESULT( *oSignalD3D12 )( ID3D12CommandQueue*, ID3D12Fence*, UINT64 );
 
 
-struct s_loaded_images
-{
-	uint8_t*		buff				= nullptr;
-	int				size				= 0;
-	SIZE_T			ptr_handle_cpu_pos	= 0;
-	ID3D12Resource* texture				= nullptr;
-	int				width				= 0;
-	int				height				= 0;
-};
+
 
 #define IMG_NUM( val ) { val, sizeof val },
 s_loaded_images loaded_imgs[ ] = {
@@ -79,7 +72,7 @@ namespace DirectX12Interface
 	_FrameContext* FrameContext;
 }
 
-
+ImFont* font1 = nullptr;
 long __fastcall hkPresentDX12( IDXGISwapChain3* p_swap_chain, UINT sync_interval, UINT flags )
 {
 
@@ -181,6 +174,23 @@ long __fastcall hkPresentDX12( IDXGISwapChain3* p_swap_chain, UINT sync_interval
 			ImGui::GetIO( ).WantCaptureMouse || ImGui::GetIO( ).WantTextInput || ImGui::GetIO( ).WantCaptureKeyboard;
 
 			io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+
+			/*char winDir[MAX_PATH];
+			GetWindowsDirectoryA(winDir, MAX_PATH);
+			std::ostringstream dir;
+			dir << winDir << "\\FONTS\\" << "SEGOEUI.TFF";
+			std::ifstream infile(dir.str().c_str());
+			if (infile.good())
+			{*/
+			font1 = io.Fonts->AddFontFromMemoryCompressedTTF((void*)segoeui_compressed_data, segoeui_compressed_size, 20);
+			//io.Fonts->AddFontDefault(font1->ConfigData);
+			//io.Fonts->Build();
+			//std::cout << "Work!\n";
+			//}else
+			//	std::cout << "ohoh!\n" << dir.str() << std::endl;
+
+
+
 			RECT rct{ };
 			GetWindowRect( Desc.OutputWindow, &rct );
 			impl::screen( )[ 0 ] = (float)( rct.right	- rct.left );
@@ -190,7 +200,14 @@ long __fastcall hkPresentDX12( IDXGISwapChain3* p_swap_chain, UINT sync_interval
 			ImGui_ImplDX12_Init( DirectX12Interface::Device, DirectX12Interface::BuffersCounts, DXGI_FORMAT_R8G8B8A8_UNORM, DirectX12Interface::DescriptorHeapImGuiRender, DirectX12Interface::DescriptorHeapImGuiRender->GetCPUDescriptorHandleForHeapStart( ), DirectX12Interface::DescriptorHeapImGuiRender->GetGPUDescriptorHandleForHeapStart( ) );
 			ImGui_ImplDX12_CreateDeviceObjects( );
 
+
+
+	
+
 			impl::win32::init( Desc.OutputWindow );
+
+
+
 			init = true;
 		}
 	}
@@ -202,7 +219,7 @@ long __fastcall hkPresentDX12( IDXGISwapChain3* p_swap_chain, UINT sync_interval
 	ImGui_ImplWin32_NewFrame( );
 	ImGui::NewFrame( );
 
-
+	//ImGui::PushFont(font1);
 	ImGui::Begin( "5676" );
 	for ( auto& img : loaded_imgs )
 		ImGui::Image( r_cast<ImTextureID>( img.ptr_handle_cpu_pos ), ImVec2( s_cast<float>( img.width ), s_cast<float>( img.height ) ) );
@@ -215,6 +232,7 @@ long __fastcall hkPresentDX12( IDXGISwapChain3* p_swap_chain, UINT sync_interval
 	if ( p_overlay )
 		p_overlay( );
 
+	//ImGui::PopFont();
 	ImGui::EndFrame( );
 
 	DirectX12Interface::_FrameContext& CurrentFrameContext = DirectX12Interface::FrameContext[ p_swap_chain->GetCurrentBackBufferIndex( ) ];
@@ -261,6 +279,11 @@ HRESULT hkResizeBuffers( IDXGISwapChain3* pSwapChain, UINT BufferCount, UINT Wid
 	impl::screen( )[ 1 ] = Height;
 
 	return r_cast<decltype( hkResizeBuffers )*>( oResizeBuffers )( pSwapChain, BufferCount, Width, Height, NewFormat, SwapChainFlags );
+}
+
+s_loaded_images* impl::d3d12::load_imgs()
+{
+	return loaded_imgs;
 }
 
 void impl::d3d12::init( )

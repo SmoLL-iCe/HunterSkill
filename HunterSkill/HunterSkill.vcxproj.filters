@@ -137,6 +137,9 @@
     <ClInclude Include="interface\d3d12_load_img.hpp">
       <Filter>interface</Filter>
     </ClInclude>
+    <ClInclude Include="fonts.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="HunterSkill.cpp">

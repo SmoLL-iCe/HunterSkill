@@ -1,9 +1,21 @@
 #include "menu.h"
 #include <d3d12.h>
+
+struct s_loaded_images
+{
+	uint8_t* buff = nullptr;
+	int				size = 0;
+	SIZE_T			ptr_handle_cpu_pos = 0;
+	ID3D12Resource* texture = nullptr;
+	int				width = 0;
+	int				height = 0;
+};
+
 namespace impl
 {
 	namespace d3d12
 	{
+		s_loaded_images* load_imgs();
 		void init();
 		float* screen( );
 		void set_overlay( t_render_overlay p );
