@@ -34,8 +34,6 @@ void __fastcall ReportProblem( DWORD code, const char* str )
 	if ( !code || code == 0x887A0001 )
 		return;
 
-
-
 	printf( "report problem, code: 0x%X\n", code );
 
 	return reinterpret_cast<decltype( ReportProblem )*>( options::reversed::i( )->ptr.func_crash )( code, str );
@@ -47,25 +45,30 @@ long __stdcall internal_handler( EXCEPTION_POINTERS* p_exception_info )
 
 	auto* const p_exception_rec = p_exception_info->ExceptionRecord;
 
-	u::display_context( p_context, p_exception_rec );
+	auto report = u::gen_exception_report( p_context, p_exception_rec );
+
+	std::ofstream myfile( "hunterSkillCrashReport.log" );
+	if ( myfile.is_open( ) )
+	{
+		myfile << report.str();
+		myfile.close( );
+	}
+
+	system( "cls" );
+	std::cout << report.str( );
 
 	return EXCEPTION_CONTINUE_SEARCH;
 }
 
 
-//142FE2D24
 //1452275A8
 /*
 MonsterHunterWorld.exe+23C6774 - 48 8B 8C CB 70140000  - mov rcx,[rbx+rcx*8+00001470]
 MonsterHunterWorld.exe+23C677C - 48 85 C9              - test rcx,rcx
 MonsterHunterWorld.exe+23C677F - 74 1F                 - je MonsterHunterWorld.exe+23C67A0
-
-
 */
 
 
-void* osub_1402C3C60 = reinterpret_cast<void*>( 0x1402C3C60 );
-//001402C3C60
 char __fastcall show_damage_4( __int64 pre_entity_target, __int64 whoCausedDamage, __int64 damage_info )
 {
 	if ( whoCausedDamage && pre_entity_target &&
@@ -84,7 +87,7 @@ char __fastcall show_damage_4( __int64 pre_entity_target, __int64 whoCausedDamag
 
 		}
 	}
-	return reinterpret_cast<decltype( show_damage_4 )*>( osub_1402C3C60 )( pre_entity_target, whoCausedDamage, damage_info );
+	return reinterpret_cast<decltype( show_damage_4 )*>( options::reversed::i( )->ptr.damage_meter_func )( pre_entity_target, whoCausedDamage, damage_info );
 }
 
 bool hooks::init( )
@@ -107,6 +110,9 @@ bool hooks::init( )
 		u8ptr( 0x14277C990 ),
 		u8ptr( 0x14276C9D0 ),
 		u8ptr( 0x14275DCD0 ),
+
+		//pl
+		u8ptr( 0x14277B210 ),
 	};
 
 	for ( auto* ptr : ac )
@@ -119,10 +125,10 @@ bool hooks::init( )
 		}
 
 	}
-	//auto p_handle = AddVectoredExceptionHandler( 1, internal_handler );
+	auto p_handle = AddVectoredExceptionHandler( 1, internal_handler );
 
 	//return true;
-	hook( show_damage_4, osub_1402C3C60 );
+	hook( show_damage_4, options::reversed::i( )->ptr.func_crash );
 	auto is_ok = hook( ReportProblem, options::reversed::i( )->ptr.func_crash );
 
 	return is_ok;

@@ -30,6 +30,7 @@ namespace options
 			uint8_t* to_viewmatrix = U8PTR( 0x145236E10 );
 			uint8_t* func_crash = U8PTR( 0x142570850 );
 			uint8_t* ptr_ingame = U8PTR( 0x1451C3FC0 );
+			uint8_t* damage_meter_func = U8PTR( 0x1402C3C60 );
 		}ptr;
 		//=====================//=====================
 		struct c_offset

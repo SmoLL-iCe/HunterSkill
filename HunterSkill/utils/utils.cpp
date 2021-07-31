@@ -36,100 +36,199 @@ void u::set_console_color( const WORD color )
 	SetConsoleTextAttribute( GetStdHandle( STD_OUTPUT_HANDLE ), color );
 }
 
-void u::display_context( PCONTEXT ContextRecord, PEXCEPTION_RECORD p_exception_record )
+std::ostringstream u::gen_exception_report( PCONTEXT ContextRecord, PEXCEPTION_RECORD p_exception_record )
 {
-	printf( "===> ExceptionAddress 0x%p\n", p_exception_record->ExceptionAddress );
-#ifdef _M_X64
-	printf( " r8[%I64X]\n r9[%I64X]\nr10[%I64X]\nr11[%I64X]\nr12[%I64X]\nr13[%I64X]\nr14[%I64X]\nr15[%I64X]\n"
-		"rax[%I64X]\nrbx[%I64X]\nrcx[%I64X]\nrdx[%I64X]\nrbp[%I64X]\nrsi[%I64X]\nrsp[%I64X]\nrdi[%I64X]\n",
-		ContextRecord->R8,
-		ContextRecord->R9,
-		ContextRecord->R10,
-		ContextRecord->R11,
-		ContextRecord->R12,
-		ContextRecord->R13,
-		ContextRecord->R14,
-		ContextRecord->R15,
-		ContextRecord->Rax,
-		ContextRecord->Rbx,
-		ContextRecord->Rcx,
-		ContextRecord->Rdx,
-		ContextRecord->Rbp,
-		ContextRecord->Rsi,
-		ContextRecord->Rsp,
-		ContextRecord->Rdi
-	);
-	printf( "\nP1Home 0x%I64X\nP2Home 0x%I64X\nP3Home 0x%I64X\nP4Home 0x%I64X\nP5Home 0x%I64X\nP6Home 0x%I64X\n",
-		ContextRecord->P1Home,
-		ContextRecord->P2Home,
-		ContextRecord->P3Home,
-		ContextRecord->P4Home,
-		ContextRecord->P5Home,
-		ContextRecord->P6Home
-	);
-	printf( "\nDr0 0x%I64X\nDr1 0x%I64X\nDr2 0x%I64X\nDr3 0x%I64X\nDr6 0x%I64X\nDr7 0x%I64X\n",
-		ContextRecord->Dr0,
-		ContextRecord->Dr1,
-		ContextRecord->Dr2,
-		ContextRecord->Dr3,
-		ContextRecord->Dr6,
-		ContextRecord->Dr7
-	);
-	printf( "\nContextFlags 0x%X\nVectorControl 0x%I64X\n",
-		ContextRecord->ContextFlags,
-		ContextRecord->VectorControl
-	);
-	printf( "\nDebugControl 0x%I64X\nLastBranchToRip 0x%I64X\nLastBranchFromRip 0x%I64X\nLastExceptionToRip 0x%I64X\nLastExceptionFromRip 0x%I64X\n",
-		ContextRecord->DebugControl,
-		ContextRecord->LastBranchToRip,
-		ContextRecord->LastBranchFromRip,
-		ContextRecord->LastExceptionToRip,
-		ContextRecord->LastExceptionFromRip
-	);
-	for ( uint32_t i = 0; i < p_exception_record->NumberParameters; ++i )
-	{
-		printf( "ExceptionInformation[%d] == %I64X\n", i, p_exception_record->ExceptionInformation[ i ] );
-	}
-#else
-	printf( " Edi[%lX]\nEsi[%lX]\nEbx[%lX]\nEdx[%lX]\nEcx[%lX]"
-		"\nEax[%lX]\nEbp[%lX]\nEip[%lX]\nEsp[%lX]\n",
-		ContextRecord->Edi,
-		ContextRecord->Esi,
-		ContextRecord->Ebx,
-		ContextRecord->Edx,
-		ContextRecord->Ecx,
-		ContextRecord->Eax,
-		ContextRecord->Ebp,
-		ContextRecord->Eip,
-		ContextRecord->Esp
-	);
-	printf( "\nDr0 0x%lX\nDr1 0x%lX\nDr2 0x%lX\nDr3 0x%lX\nDr6 0x%lX\nDr7 0x%lX\n",
-		ContextRecord->Dr0,
-		ContextRecord->Dr1,
-		ContextRecord->Dr2,
-		ContextRecord->Dr3,
-		ContextRecord->Dr6,
-		ContextRecord->Dr7
-	);
-	for ( uint32_t i = 0; i < p_exception_record->NumberParameters; ++i )
-	{
-		printf( "ExceptionInformation[%d] == %luX\n", i, p_exception_record->ExceptionInformation[ i ] );
-	}
-#endif
-	printf( "\nSegCs %lu \nSegDs %lu\nSegEs %lu\nSegFs %lu\nSegGs %lu\nSegSs %lu\nEFlags %lu\n",
-		ContextRecord->SegCs,
-		ContextRecord->SegDs,
-		ContextRecord->SegEs,
-		ContextRecord->SegFs,
-		ContextRecord->SegGs,
-		ContextRecord->SegSs,
-		ContextRecord->EFlags
-	);
-	printf( "\nContextFlags 0x%lX\n",
-		ContextRecord->ContextFlags
-	);
-	printf(
-		"======================================================="
-		"\n" );
+	std::ostringstream show;
 
+	auto m_ExceptionCode = p_exception_record->ExceptionRecord->ExceptionCode;
+	int m_exceptionInfo_0 = p_exception_record->ExceptionRecord->ExceptionInformation[ 0 ];
+	int m_exceptionInfo_1 = p_exception_record->ExceptionRecord->ExceptionInformation[ 1 ];
+	int m_exceptionInfo_2 = p_exception_record->ExceptionRecord->ExceptionInformation[ 2 ];
+	show << "===> ExceptionAddress 0x" << std::hex << std::uppercase << p_exception_record->ExceptionAddress << std::endl;
+
+	switch ( m_ExceptionCode )
+	{
+	case EXCEPTION_ACCESS_VIOLATION:
+		show << "Cause: EXCEPTION_ACCESS_VIOLATION, ";
+		if ( m_exceptionInfo_0 == 0 )
+			// bad read
+			show << "Attempted to read from: 0x" << std::hex << std::uppercase << m_exceptionInfo_1 << std::endl;
+		
+		else if ( m_exceptionInfo_0 == 1 )
+			// bad write
+			show << "Attempted to write to: 0x" << std::hex << std::uppercase << m_exceptionInfo_1 << std::endl;
+		
+		else if ( m_exceptionInfo_0 == 8 )
+			// user-mode data execution prevention (DEP)
+			show << "Data Execution Prevention (DEP) at: 0x" << std::hex << std::uppercase << m_exceptionInfo_1 << std::endl;
+		
+		else
+			// unknown, shouldn't happen
+			show << "Unknown access violation at: 0x" << std::hex << std::uppercase << m_exceptionInfo_1 << std::endl;
+		break;
+
+	case EXCEPTION_ARRAY_BOUNDS_EXCEEDED:
+		show << "Cause: EXCEPTION_ARRAY_BOUNDS_EXCEEDED" << std::endl;
+		break;
+
+	case EXCEPTION_BREAKPOINT:
+		show << "Cause: EXCEPTION_BREAKPOINT" << std::endl;
+		break;
+
+	case EXCEPTION_DATATYPE_MISALIGNMENT:
+		show << "Cause: EXCEPTION_DATATYPE_MISALIGNMENT" << std::endl;
+		break;
+
+	case EXCEPTION_FLT_DENORMAL_OPERAND:
+		show << "Cause: EXCEPTION_FLT_DENORMAL_OPERAND" << std::endl;
+		break;
+
+	case EXCEPTION_FLT_DIVIDE_BY_ZERO:
+		show << "Cause: EXCEPTION_FLT_DIVIDE_BY_ZERO" << std::endl;
+		break;
+
+	case EXCEPTION_FLT_INEXACT_RESULT:
+		show << "Cause: EXCEPTION_FLT_INEXACT_RESULT" << std::endl;
+		break;
+
+	case EXCEPTION_FLT_INVALID_OPERATION:
+		show << "Cause: EXCEPTION_FLT_INVALID_OPERATION" << std::endl;
+		break;
+
+	case EXCEPTION_FLT_OVERFLOW:
+		show << "Cause: EXCEPTION_FLT_OVERFLOW" << std::endl;
+		break;
+
+	case EXCEPTION_FLT_STACK_CHECK:
+		show << "Cause: EXCEPTION_FLT_STACK_CHECK" << std::endl;
+		break;
+
+	case EXCEPTION_FLT_UNDERFLOW:
+		show << "Cause: EXCEPTION_FLT_UNDERFLOW" << std::endl;
+		break;
+
+	case EXCEPTION_ILLEGAL_INSTRUCTION:
+		show << "Cause: EXCEPTION_ILLEGAL_INSTRUCTION" << std::endl;
+		break;
+
+	case EXCEPTION_IN_PAGE_ERROR:
+		show << "Cause: EXCEPTION_IN_PAGE_ERROR, ";
+		if ( m_exceptionInfo_0 == 0 )
+			// bad read
+			show << "Attempted to read from: 0x" << std::hex << std::uppercase << m_exceptionInfo_1 << std::endl;
+
+		else if ( m_exceptionInfo_0 == 1 )
+			// bad write
+			show << "Attempted to write to: 0x" << std::hex << std::uppercase << m_exceptionInfo_1 << std::endl;
+
+		else if ( m_exceptionInfo_0 == 8 )
+			// user-mode data execution prevention (DEP)
+			show << "Data Execution Prevention (DEP) at: 0x" << std::hex << std::uppercase << m_exceptionInfo_1 << std::endl;
+
+		else
+			// unknown, shouldn't happen
+			show << "Unknown access violation at: 0x" << std::hex << std::uppercase << m_exceptionInfo_1 << std::endl;
+		break;
+
+		show << "NTSTATUS: 0x" << std::hex << std::uppercase << m_exceptionInfo_2 << std::endl;
+		break;
+
+	case EXCEPTION_INT_DIVIDE_BY_ZERO:
+		show << "Cause: EXCEPTION_INT_DIVIDE_BY_ZERO" << std::endl;
+		break;
+
+	case EXCEPTION_INT_OVERFLOW:
+		show << "Cause: EXCEPTION_INT_OVERFLOW" << std::endl;
+		break;
+
+	case EXCEPTION_INVALID_DISPOSITION:
+		show << "Cause: EXCEPTION_INVALID_DISPOSITION" << std::endl;
+		break;
+
+	case EXCEPTION_NONCONTINUABLE_EXCEPTION:
+		show << "Cause: EXCEPTION_NONCONTINUABLE_EXCEPTION" << std::endl;
+		break;
+
+	case EXCEPTION_PRIV_INSTRUCTION:
+		show << "Cause: EXCEPTION_PRIV_INSTRUCTION" << std::endl;
+		break;
+
+	case EXCEPTION_SINGLE_STEP:
+		show << "Cause: EXCEPTION_SINGLE_STEP" << std::endl;
+		break;
+
+	case EXCEPTION_STACK_OVERFLOW:
+		show << "Cause: EXCEPTION_STACK_OVERFLOW" << std::endl;
+		break;
+
+	case DBG_CONTROL_C:
+		show << "Cause: DBG_CONTROL_C" << std::endl;
+		break;
+
+	default:
+		;
+	}
+
+
+	show << "===> ExceptionAddress 0x" << std::hex << std::uppercase << p_exception_record->ExceptionAddress << std::endl;
+
+#ifdef _M_X64
+
+	show << "r8[ " << std::hex << std::uppercase << ContextRecord->R8 << " ]\n";
+	show << "r9[ " << std::hex << std::uppercase << ContextRecord->R9 << " ]\n";
+	show << "r10[ " << std::hex << std::uppercase << ContextRecord->R10 << " ]\n";
+	show << "r11[ " << std::hex << std::uppercase << ContextRecord->R11 << " ]\n";
+	show << "r12[ " << std::hex << std::uppercase << ContextRecord->R12 << " ]\n";
+	show << "r13[ " << std::hex << std::uppercase << ContextRecord->R13 << " ]\n";
+	show << "r14[ " << std::hex << std::uppercase << ContextRecord->R14 << " ]\n";
+	show << "r15[ " << std::hex << std::uppercase << ContextRecord->R15 << " ]\n";
+	show << "rax[ " << std::hex << std::uppercase << ContextRecord->Rax << " ]\n";
+	show << "rbx[ " << std::hex << std::uppercase << ContextRecord->Rbx << " ]\n";
+	show << "rcx[ " << std::hex << std::uppercase << ContextRecord->Rcx << " ]\n";
+	show << "rdx[ " << std::hex << std::uppercase << ContextRecord->Rdx << " ]\n";
+	show << "rbp[ " << std::hex << std::uppercase << ContextRecord->Rbp << " ]\n";
+	show << "rsi[ " << std::hex << std::uppercase << ContextRecord->Rsi << " ]\n";
+	show << "rsp[ " << std::hex << std::uppercase << ContextRecord->Rsp << " ]\n";
+	show << "rdi[ " << std::hex << std::uppercase << ContextRecord->Rdi << " ]\n";
+
+#else
+	show << "edi[ " << std::hex << std::uppercase << ContextRecord->Edi << " ]\n";
+	show << "esi[ " << std::hex << std::uppercase << ContextRecord->Esi << " ]\n";
+	show << "ebx[ " << std::hex << std::uppercase << ContextRecord->Ebx << " ]\n";
+	show << "edx[ " << std::hex << std::uppercase << ContextRecord->Edx << " ]\n";
+	show << "ecx[ " << std::hex << std::uppercase << ContextRecord->Ecx << " ]\n";
+	show << "eax[ " << std::hex << std::uppercase << ContextRecord->Eax << " ]\n";
+	show << "ebp[ " << std::hex << std::uppercase << ContextRecord->Ebp << " ]\n";
+	show << "eip[ " << std::hex << std::uppercase << ContextRecord->Eip << " ]\n";
+	show << "esp[ " << std::hex << std::uppercase << ContextRecord->Esp << " ]\n";
+#endif
+	show << "dr0[ " << std::hex << std::uppercase << ContextRecord->Dr0 << " ]\n";
+	show << "dr1[ " << std::hex << std::uppercase << ContextRecord->Dr1 << " ]\n";
+	show << "dr2[ " << std::hex << std::uppercase << ContextRecord->Dr2 << " ]\n";
+	show << "dr3[ " << std::hex << std::uppercase << ContextRecord->Dr3 << " ]\n";
+	show << "dr6[ " << std::hex << std::uppercase << ContextRecord->Dr6 << " ]\n";
+	show << "dr7[ " << std::hex << std::uppercase << ContextRecord->Dr7 << " ]\n";
+#ifdef _M_X64
+	show << "DebugControl[ "			<< std::hex << std::uppercase << ContextRecord->DebugControl			<< " ]\n";
+	show << "LastBranchToRip[ "			<< std::hex << std::uppercase << ContextRecord->LastBranchToRip			<< " ]\n";
+	show << "LastBranchFromRip[ "		<< std::hex << std::uppercase << ContextRecord->LastBranchFromRip		<< " ]\n";
+	show << "LastExceptionToRip[ "		<< std::hex << std::uppercase << ContextRecord->LastExceptionToRip		<< " ]\n";
+	show << "LastExceptionFromRip[ "	<< std::hex << std::uppercase << ContextRecord->LastExceptionFromRip	<< " ]\n";
+#endif
+	for ( uint32_t i = 0; i < p_exception_record->NumberParameters; ++i )
+		show << "ExceptionInformation[ " << std::dec << i << " ] == [ " << std::hex << std::uppercase << p_exception_record->ExceptionInformation[ i ] << " ]\n";
+
+
+	show << "SegCs[ " << std::hex << std::uppercase << ContextRecord->SegCs << " ]\n";
+	show << "SegDs[ " << std::hex << std::uppercase << ContextRecord->SegDs << " ]\n";
+	show << "SegEs[ " << std::hex << std::uppercase << ContextRecord->SegEs << " ]\n";
+	show << "SegFs[ " << std::hex << std::uppercase << ContextRecord->SegFs << " ]\n";
+	show << "SegGs[ " << std::hex << std::uppercase << ContextRecord->SegGs << " ]\n";
+	show << "SegSs[ " << std::hex << std::uppercase << ContextRecord->SegSs << " ]\n";
+	show << "EFlags[ " << std::hex << std::uppercase << ContextRecord->EFlags << " ]\n";
+	show << "ContextFlags[ " << std::hex << std::uppercase << ContextRecord->ContextFlags << " ]\n";
+
+	show <<
+		"==============================================================================================================\n";
+	return show;
 }

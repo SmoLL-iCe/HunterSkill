@@ -7,5 +7,5 @@ namespace u
 	void set_console_color( WORD color );
 	wchar_t* get_dir_file( const wchar_t* name );
 	int64_t random( int min, int max );
-	void display_context( PCONTEXT ContextRecord, PEXCEPTION_RECORD p_exception_record );
+	std::ostringstream gen_exception_report( PCONTEXT ContextRecord, PEXCEPTION_RECORD p_exception_record );
 };
