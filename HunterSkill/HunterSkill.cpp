@@ -321,8 +321,6 @@ int main( )
     std::cout << err << std::endl;
     suporte_to_d3d12 = !err;
 
-    hooks::init();
-
     if (suporte_to_d3d12)
     {
         std::cout << "Have compatibily with Dx12\n";
@@ -337,6 +335,8 @@ int main( )
         impl::d3d11::set_overlay(overgay);
         // set menu filter ? 
     }
+
+    hooks::init( );
 
     bool init_hunting = false;
 

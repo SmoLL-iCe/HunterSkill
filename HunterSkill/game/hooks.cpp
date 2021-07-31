@@ -125,12 +125,12 @@ bool hooks::init( )
 		}
 
 	}
-	auto p_handle = AddVectoredExceptionHandler( 1, internal_handler );
 
 	//return true;
-	hook( show_damage_4, options::reversed::i( )->ptr.func_crash );
+	hook( show_damage_4, options::reversed::i( )->ptr.damage_meter_func );
 	auto is_ok = hook( ReportProblem, options::reversed::i( )->ptr.func_crash );
-
+	Sleep( 5000 );
+	auto p_handle = AddVectoredExceptionHandler( 1, internal_handler );
 	return is_ok;
 }
 
