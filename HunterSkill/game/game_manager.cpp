@@ -183,19 +183,20 @@ void game::manager::update_entities( )
 		if ( *r_cast<uintptr_t*>( ptr + 0x950 ) == 0ui64 )
 			continue;
 
+		if (!mem::is_valid_read(ptr + 0x7670))
+			continue;
+
 		auto sub = *r_cast<uintptr_t*>( ptr + 0x7670 );
 
-		if ( sub != 0 && mem::is_valid_read( sub + 0x60 ) )
+		if ( sub != 0 && mem::is_valid_read( sub + 0x60 ) && mem::is_valid_read(sub + 0x64))
 		{
 			ent.health		= *r_cast<float*>( sub + 0x64 );
-
 			ent.max_health	= *r_cast<float*>( sub + 0x60 );		
 		}
 
 		if ( mem::is_valid_read( ptr + 0x5f28 ) )
 		{
-			auto ptr_str = *r_cast<uintptr_t*>( ptr + 0x5f28 );
-
+			auto ptr_str = *r_cast<uintptr_t*>(ptr + 0x5f28);
 			if ( ptr_str > ptr && ptr_str < (ptr + 0x8f28) )
 			{
 				strcpy_s( ent.file, r_cast<char*>( ptr_str ) );
@@ -203,9 +204,8 @@ void game::manager::update_entities( )
 		}
 
 		if (ent.is_player)
-		{
 			ent.type_ = *r_cast<uint32_t*>(ptr + 0xECC4);
-		}
+		
 
 
 		if ( ent.is_boss )

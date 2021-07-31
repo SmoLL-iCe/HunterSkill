@@ -43,3 +43,9 @@
 *.tlog
 *.pdb
 *.txt
+
+# Code
+*.xml
+*.sarif
+
+
