@@ -11,6 +11,7 @@
 #include "game/hooks.h"
 #include "Monster_names.hpp"
 #include "thirdparty/minhook/include/MinHook.h"
+#include "interface/ImDraw.h"
 
 
 void drawn_bar(float hp, float max_hp, int size_, ImVec2 Pos)
@@ -90,15 +91,78 @@ bool less, av, best, icon, saved;
 bool show_player = true, show_entry = false, show_hp_num = true, show_distance = false;
 int distance_max = 10000;
 
-
+bool closed = true;
+bool finish_open = false;
+float anim = 0;
+bool hovered = false;
 void __stdcall overgay( )
 {
-    s_loaded_images* imgs = impl::d3d12::load_imgs();
+    s_loaded_images* imgs = impl::d3d12::load_imgs( );
+    
+    auto width = impl::screen( )[ 0 ];
+    auto form_width = float( 400 );
+    auto form_height = 130.f;
+    float button_height = 18.f;
+    float closed_height = button_height + 6.f;
+    float inc_val = 3.f;
+
+
+    if ( closed )
+    {
+        finish_open = false;
+        if ( closed_height != anim )
+        {
+            if ( abs( closed_height - anim ) <= inc_val )
+                anim = closed_height;
+
+            if ( anim > closed_height )
+                anim -= inc_val;
+            else
+                anim += inc_val;
+        }
+
+    }
+    else
+    {
+        if ( form_height != anim )
+        {
+            if ( abs( form_height - anim ) <= inc_val )
+            {
+                anim = form_height;
+                finish_open = true;
+            }
+
+            if ( anim > form_height )
+                anim -= inc_val;
+            else
+                anim += inc_val;
+        }
+        else
+            finish_open = true;
+
+    }
+    
 
     if ( show_estatics )
     {
-        ImGui::Begin( "##ESTATICS", &show_estatics, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize );
+        ImGui::PushStyleVar( ImGuiStyleVar_WindowMinSize, ImVec2( 15.f, 15.f ) );
+
+        ImGui::SetNextWindowSize( { form_width, anim }, ImGuiCond_Always );
+
+        ImGui::SetNextWindowPos( { float( width / 2.f ) - float( form_width / 2.f ), 0.f } );
+
+        ImGui::Begin( "##ESTATICS", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollWithMouse );                          // Create a window called "Hello, world!" and append into it.
+      
+        if ( finish_open )
         {
+            ImGui::BeginChild( "#EST", { form_width - 16.f, ( form_height - 12.f ) - button_height } );
+            if ( ImGui::TreeNode( "Options##MONSTER" ) )
+            {
+                //ImGui::Checkbox( "Auto Save", &saved ); // none now, myby button? for save one time?
+                ImGui::Checkbox( "Show average damage", &av );
+                ImGui::Checkbox( "Show less damage", &less );
+                ImGui::TreePop( );
+            }
             auto myplayer = uintptr_t( game::manager::i( )->get_self_player( ) );
             if ( myplayer )
             {
@@ -115,23 +179,21 @@ void __stdcall overgay( )
                             {
                                 if ( who_dam.entity == ( myplayer + ( size_player * player_index ) ) )
                                     break;
-                                
+
                             }
                             ++player_index;
                             float mid = 0;
-                            if (icon)
-                            {
-                                ImGui::Image(r_cast<ImTextureID>(imgs[who_dam.type].ptr_handle_cpu_pos), ImVec2(s_cast<float>(imgs[who_dam.type].width/2), s_cast<float>(imgs[who_dam.type].height / 2)));
+                            ImGui::Image( r_cast<ImTextureID>( imgs[ who_dam.type ].ptr_handle_cpu_pos ), ImVec2( s_cast<float>( imgs[ who_dam.type ].width / 2 ), s_cast<float>( imgs[ who_dam.type ].height / 2 ) ) );
 
-                                ImGui::SameLine(55);
-                            }
+                            ImGui::SameLine( 55 );
+                            
 
                             std::ostringstream show;
 
-                            show  << " Player" << player_index << "-Damage:" << (int)who_dam.total_damage;
+                            show << " Player" << player_index << "-Damage:" << (int)who_dam.total_damage;
 
-                            if ( best )
-                                show << ", Best:" << (int)who_dam.best_hit;
+                            show << ", Best:" << (int)who_dam.best_hit;
+
                             if ( av )
                             {
                                 if ( who_dam.hit_count > 0 && who_dam.total_damage > 0 )
@@ -148,22 +210,35 @@ void __stdcall overgay( )
                     }
                 }
             }
-
-            if ( ImGui::TreeNode( "Options##MONSTER" ) )
-            {
-                //ImGui::Checkbox( "Auto Save", &saved ); // none now, myby button? for save one time?
-
-                ImGui::Checkbox( "Show Best damage", &best );
-                ImGui::Checkbox( "Show average damage", &av );
-                ImGui::Checkbox( "Show less damage", &less );
-                ImGui::Checkbox( "Show ICON", &icon );
-                ImGui::TreePop( );
-            }
-
+            ImGui::EndChild( );
+        
         }
+        
+
+        ImGui::SetCursorPos( { 0, ( anim - button_height ) - 3.f } );
+
+        auto& style = ImGui::GetStyle( );
+        auto backup1_y = style.ButtonTextAlign.y;
+        auto backup2_y = style.FramePadding.y;
+        style.FramePadding.y = -1.3f;
+        style.ButtonTextAlign.y = 0.f;
+        std::string dmg = "Damage Meter";
+        if ( ImGui::Button( ((closed) ? dmg + " [SHOW]" : dmg + " [HIDE]" ).c_str( ), { float( form_width ), button_height } ) )
+        {
+
+            closed = !closed;
+        }
+        style.FramePadding.y = backup2_y;
+        style.ButtonTextAlign.y = backup1_y;
         ImGui::End( );
+        ImGui::PopStyleVar( );
+
+
+
+
     }
 
+    ImGui::GetIO( ).MouseDrawCursor = ImGui::IsWindowHovered( ImGuiHoveredFlags_AnyWindow );
 
     if ( !game::manager::i( )->in_hunting( ) )
         return;
@@ -213,28 +288,44 @@ void __stdcall overgay( )
 
             std::string hp_hud = " HP:" + std::to_string((int)entity.health) + "/" + std::to_string((int)entity.max_health);
 
-    		std::ostringstream ss;
+            auto bg_height = 50.f + ( 20.f * ( int( show_distance ) + int( show_entry ) ) );
 
-            // Colors?
-            if(show_entry)
-            ss << "ENTITY 0x" << std::hex << std::uppercase << entity.ptr << std::endl;
-                
-            if(show_distance)
-            ss << "Distance [ " << std::dec << distance << "]\n";
-            
-            ss << "F(name): " << file_monster;
+            drawn_background({ out.x, out.y }, 15, {210.f, bg_height });
 
-            drawn_background({ out.x, out.y }, 15, {210, 90});
+            auto bar_size = 170;
 
-            drawn_bar(entity.health, entity.max_health, 170, { out.x + 20, out.y + 10 });
+            auto now_x = out.x + 20;
+            auto now_y = out.y + 10;
 
-            if (show_hp_num)
+            drawn_bar(entity.health, entity.max_health, bar_size, { now_x, now_y });
+
+            now_y += 15;
+            if ( show_hp_num )
             {
-                ImGui::GetOverlayDrawList()->AddText(ImVec2(out.x + 25, out.y + 5),
-                    ImGui::GetColorU32({ 1,1,1,1 }), hp_hud.c_str());
+                draw::string( 18.f, ImVec2( now_x + ( bar_size / 2 ), now_y ), { 1, 1, 1, 1 }, true, true, hp_hud.c_str( ) );               
+            } 
+            
+
+            now_y += 20;
+            draw::string( 18.f, ImVec2( now_x + ( bar_size / 2 ), now_y ), { 1, 1, 1, 1 }, true, true, file_monster.c_str( ) );
+            
+
+            if ( show_distance )
+            {
+                std::ostringstream ss;
+                ss << "Distance [ " << (int)distance << "]";
+                now_y += 20;
+                draw::string( 18.f, ImVec2( now_x + ( bar_size / 2 ), now_y ), { 1, 1, 1, 1 }, true, true, ss.str().c_str( ) );
             }
-            ImGui::GetOverlayDrawList( )->AddText( ImVec2( out.x + 10, out.y+25 ),
-                ImGui::GetColorU32({1,1,1,1}), ss.str().c_str());
+
+            if ( show_entry )
+            {
+                std::ostringstream ss;
+                ss << "ENTITY 0x" << std::hex << std::uppercase << entity.ptr << std::endl;
+                now_y += 20;
+                draw::string( 18.f, ImVec2( now_x + ( bar_size / 2 ), now_y ), { 1, 1, 1, 1 }, true, true, ss.str( ).c_str( ) );
+            }
+
     	} );
 }
 

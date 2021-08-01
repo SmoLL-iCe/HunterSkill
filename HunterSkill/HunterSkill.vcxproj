@@ -154,6 +154,7 @@
     <ClInclude Include="interface\d3d11_impl.h" />
     <ClInclude Include="interface\d3d12_impl.h" />
     <ClInclude Include="interface\d3d12_load_img.hpp" />
+    <ClInclude Include="interface\ImDraw.h" />
     <ClInclude Include="interface\menu.h" />
     <ClInclude Include="interface\steam.h" />
     <ClInclude Include="interface\win32_impl.h" />
@@ -188,6 +189,7 @@
     <ClCompile Include="game\shared_config.cpp" />
     <ClCompile Include="interface\d3d11_impl.cpp" />
     <ClCompile Include="interface\d3d12_impl.cpp" />
+    <ClCompile Include="interface\ImDraw.cpp" />
     <ClCompile Include="interface\menu.cpp" />
     <ClCompile Include="interface\steam.cpp" />
     <ClCompile Include="interface\win32_impl.cpp" />

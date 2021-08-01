@@ -140,6 +140,9 @@
     <ClInclude Include="fonts.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="interface\ImDraw.h">
+      <Filter>interface</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="HunterSkill.cpp">
@@ -213,6 +216,9 @@
     </ClCompile>
     <ClCompile Include="game\hooks.cpp">
       <Filter>game</Filter>
+    </ClCompile>
+    <ClCompile Include="interface\ImDraw.cpp">
+      <Filter>interface</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

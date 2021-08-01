@@ -187,7 +187,7 @@ long __fastcall hkPresentDX12( IDXGISwapChain3* p_swap_chain, UINT sync_interval
 			std::ifstream infile(dir.str().c_str());
 			if (infile.good())
 			{*/
-			font1 = io.Fonts->AddFontFromMemoryCompressedTTF((void*)segoeui_compressed_data, segoeui_compressed_size, 20);
+			font1 = io.Fonts->AddFontFromMemoryCompressedTTF((void*)segoeui_compressed_data, segoeui_compressed_size, 18);
 			//io.Fonts->AddFontDefault(font1->ConfigData);
 			//io.Fonts->Build();
 			//std::cout << "Work!\n";
