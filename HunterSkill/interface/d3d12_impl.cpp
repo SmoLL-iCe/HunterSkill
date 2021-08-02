@@ -65,6 +65,7 @@ s_loaded_images backgrounds[] = {
 	IMG_NUM(elter)
 	IMG_NUM(hoarfrost)
 	IMG_NUM(arena)
+	IMG_NUM(astera)
 };
 
 

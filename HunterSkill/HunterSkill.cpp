@@ -115,7 +115,7 @@ std::ostringstream elapsed_time(clock_t t1)
 
 // Global vars to edit later
 bool show_estatics = true, winconfig = true;
-bool less, av, best, icon = true, saved;
+bool less=true, av=true, best=true, icon = true, saved;
 
 //filter to menu (TEMP)
 bool show_player = true, show_entry = false, show_hp_num = true, show_distance = false;
@@ -208,10 +208,8 @@ void __stdcall overgay( )
         ImGui::SetNextWindowPos(ImVec2(impl::screen()[0] * 0.5f, impl::screen()[1] * 0.5f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
         ImGui::SetNextWindowSize({ 900 , 600 });
         ImGui::Begin("ESTATICS", &overlay, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoScrollbar);
-        
-
+      
         auto pos = ImGui::GetCursorScreenPos();
-
         auto a = game::manager::get_map();
         a = check_map(a);
         std::string map;
@@ -222,6 +220,13 @@ void __stdcall overgay( )
             {
                 ImGui::SetCursorPos({ 0,0 });
                 ImGui::Image(r_cast<ImTextureID>(bkgs[a].ptr_handle_cpu_pos), ImVec2(899, 599));
+                ImGui::SetCursorPos({ 0,0 });
+            }
+            else
+            {
+                ImGui::SetCursorPos({ 0,0 });
+                ImGui::Image(r_cast<ImTextureID>(bkgs[7].ptr_handle_cpu_pos), ImVec2(899, 599));
+                ImGui::SetCursorPos({ 0,0 });
             }
       
             switch (a)
@@ -253,11 +258,11 @@ void __stdcall overgay( )
             }
             
         }
-        draw::string(25, ImVec2(pos.x + 5, pos.y + 2), { 1,1,1,1 }, false, true, map.c_str());
+        draw::string(25, pos, { 1,1,1,1 }, false, true, map.c_str());
         draw::string(30, ImVec2(pos.x + 800, pos.y + 5), { 1,1,1,1 }, false, true, elapsed_time(tm).str().c_str());
         ImGui::NewLine(); ImGui::NewLine();  ImGui::NewLine();
-        //draw::string(30, ImVec2((impl::screen()[0] * 0.5f) + 10, (impl::screen()[1] * 0.5f) -5), { 1,1,1,1 }, false, true, );
-
+        pos = ImGui::GetCursorPos();
+        ImGui::SetCursorPos({ pos.x, pos.y - 5 });
         ImGui::Separator();
         ImGui::BeginChild("Childe_of_players");
         auto myplayer = uintptr_t(game::manager::i()->get_self_player());
@@ -265,7 +270,8 @@ void __stdcall overgay( )
         {
             for (auto& monster : game::manager::i()->hunting_damage())
             {
-                if (ImGui::TreeNode(getMonsterName(monster.name).c_str()))
+                ImGuiWindowFlags  CollapsingHeader_flag = ImGuiTreeNodeFlags_DefaultOpen;
+                if (ImGui::CollapsingHeader(getMonsterName(monster.name).c_str(), CollapsingHeader_flag))
                 {
                     ImGui::Separator();
                     if (icon)
@@ -305,9 +311,9 @@ void __stdcall overgay( )
                         if (icon)
                         {
                             ImGui::Image(r_cast<ImTextureID>(imgs[who_dam.type].ptr_handle_cpu_pos), ImVec2(s_cast<float>(imgs[who_dam.type].width / 2), s_cast<float>(imgs[who_dam.type].height / 2)));
-                            ImGui::SameLine(100);
+                            
                         }
-
+                        ImGui::SameLine(100);
                         ImGui::Text("PLAYER%d", player_index);
                         ImGui::SameLine(300);
                         ImGui::TextColored((ImVec4(0, 1, 0, 1)), std::to_string((int)who_dam.total_damage).c_str());
@@ -327,7 +333,7 @@ void __stdcall overgay( )
                         }
                        
                     }
-                    ImGui::TreePop();
+                   
                 }
                
             }
