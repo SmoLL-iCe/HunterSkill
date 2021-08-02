@@ -132,7 +132,7 @@ s_loaded_images* bkgs = impl::d3d12::load_bkg();
 
 int check_map(byte mp)
 {
-    if (mp == 28 || mp == 27 || mp == 220 || mp == 17 || mp == 136)//ERMO SELVAGEM
+    if (mp == 28 || mp == 27 || mp == 220 || mp == 17 /* || mp == 136*/)//ERMO SELVAGEM
         return 0; 
     if (mp == 22 || mp == 31 || mp == 180 || mp == 22 || mp == 118)//FLORESTA ANCESTRAL
         return 1; 
@@ -232,25 +232,25 @@ void __stdcall overgay( )
             switch (a)
             {
                 case 0:
-                    map = "ERMO SELVAGEM\nO MONSTRO SAIU CORRENDO, O PAUNUNKU DE QUEM ESTA LENDO";
+                    map = "ERMO SELVAGEM";//\nO MONSTRO SAIU CORRENDO, O PAUNUNKU DE QUEM ESTA LENDO";
                     break;
                 case 1:
-                    map ="FLORESTA ANCESTRAL\nO MONSTRO SAIU CORRENDO, O PAUNUNKU DE QUEM ESTA LENDO";
+                    map ="FLORESTA ANCESTRAL";//\nO MONSTRO SAIU CORRENDO, O PAUNUNKU DE QUEM ESTA LENDO";
                     break;
                 case 2:
-                    map ="PLANALTOS CORALINOS \nO MONSTRO SAIU CORRENDO, O PAUNUNKU DE QUEM ESTA LENDO";
+                    map ="PLANALTOS CORALINOS";// \nO MONSTRO SAIU CORRENDO, O PAUNUNKU DE QUEM ESTA LENDO";
                     break;
                 case 3:
-                    map ="VALE PUTEFRATO \nO MONSTRO SAIU CORRENDO, O PAUNUNKU DE QUEM ESTA LENDO";
+                    map ="VALE PUTEFRATO";// \nO MONSTRO SAIU CORRENDO, O PAUNUNKU DE QUEM ESTA LENDO";
                     break;
                 case 4:
-                    map= "FENDA DO ANCIAO \nO MONSTRO SAIU CORRENDO, O PAUNUNKU DE QUEM ESTA LENDO";
+                    map= "FENDA DO ANCIAO";// \nO MONSTRO SAIU CORRENDO, O PAUNUNKU DE QUEM ESTA LENDO";
                     break;
                 case 5:
-                    map = "FLORESTA GLACIAL \nO MONSTRO SAIU CORRENDO, O PAUNUNKU DE QUEM ESTA LENDO";
+                    map = "FLORESTA GLACIAL";// \nO MONSTRO SAIU CORRENDO, O PAUNUNKU DE QUEM ESTA LENDO";
                     break;
                 case 6:
-                    map = "ARENA\nO MONSTRO SAIU CORRENDO, O PAUNUNKU DE QUEM ESTA LENDO";
+                    map = "ARENA\nO MONSTRO";// SAIU CORRENDO, O PAUNUNKU DE QUEM ESTA LENDO";
                     break;
             default:
                 map = "NONE NONE \n NANIIIIIIIII??????????";
