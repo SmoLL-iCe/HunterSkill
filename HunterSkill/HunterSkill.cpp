@@ -12,6 +12,9 @@
 #include "Monster_names.hpp"
 #include "thirdparty/minhook/include/MinHook.h"
 #include "interface/ImDraw.h"
+#include <iomanip>
+#include <time.h> // for clock
+
 
 
 void drawn_bar(float hp, float max_hp, int size_, ImVec2 Pos)
@@ -82,10 +85,37 @@ void drawn_background(ImVec2 Pos, float around, ImVec2 Size = { 250,130 })
     ImGui::GetOverlayDrawList()->AddRectFilled(Pos, { Pos.x + Size.x, Pos.y + Size.y }, ImGui::GetColorU32({0,0,0,0.5}), around);
 }
 
+std::ostringstream elapsed_time(clock_t t1)
+{
+    std::ostringstream ss;
+    int dhh = 0;
+    int dmm = 0;
+    int dss = 0;
+
+    auto t2 = clock(); // we get the time now
+
+    float difference = (((float)t2) - ((float)t1)); // gives the time elapsed since t1 in milliseconds
+
+   // now get the time elapsed in seconds
+
+    float seconds = difference / 1000; // float value of seconds
+    if (seconds < (60 * 60 * 24)) // a day is not over
+    {
+        dss = fmod(seconds, 60); // the remainder is seconds to be displayed
+        float minutes = seconds / 60;  // the total minutes in float
+        dmm = fmod(minutes, 60);  // the remainder are minutes to be displayed
+        float hours = minutes / 60; // the total hours in float
+        dhh = hours;  // the hours to be displayed
+    }
+
+    ss << std::setfill('0') << std::setw(2) << dhh << ":" << std::setfill('0') << std::setw(2) << dmm << ":" << std::setfill('0') << std::setw(2) << dss;
+
+    return ss;
+}
 
 // Global vars to edit later
 bool show_estatics = true, winconfig = true;
-bool less, av, best, icon, saved;
+bool less, av, best, icon = true, saved;
 
 //filter to menu (TEMP)
 bool show_player = true, show_entry = false, show_hp_num = true, show_distance = false;
@@ -95,9 +125,37 @@ bool closed = true;
 bool finish_open = false;
 float anim = 0;
 bool hovered = false;
+clock_t tm = clock();
+s_loaded_images* imgs = impl::d3d12::load_imgs();
+s_loaded_images* bkgs = impl::d3d12::load_bkg();
+
+
+int check_map(byte mp)
+{
+    if (mp == 28 || mp == 27 || mp == 220 || mp == 17 || mp == 136)//ERMO SELVAGEM
+        return 0; 
+    if (mp == 22 || mp == 31 || mp == 180 || mp == 22 || mp == 118)//FLORESTA ANCESTRAL
+        return 1; 
+    if (mp == 44 || mp == 36 || mp == 136 || mp == 45 || mp == 9)//CORALINOS
+        return 2;
+    if (mp == 42 || mp == 29 || mp == 12 || mp == 25 || mp == 162)//PUTEFRATO
+        return 3; 
+    if (mp == 31 || mp == 33 || mp == 160 || mp == 37 || mp == 236)//FENDA DO ANCIÃO
+        return 4;
+    if (mp == 43 || mp == 62 || mp == 8 || mp == 34 || mp == 21)//GLACIAL
+        return 5; 
+    if (mp == 84 || mp == 20 || mp == 144 || mp == 68 || mp == 11)//ARENA
+        return 6; 
+
+    return -1;
+}
+
+
+
+
 void __stdcall overgay( )
 {
-    s_loaded_images* imgs = impl::d3d12::load_imgs( );
+    
     
     auto width = impl::screen( )[ 0 ];
     auto form_width = float( 400 );
@@ -142,8 +200,144 @@ void __stdcall overgay( )
 
     }
     
+    bool overlay = GetAsyncKeyState(VK_TAB) & 0x8000;
 
-    if ( show_estatics )
+    if (overlay)
+    {
+
+        ImGui::SetNextWindowPos(ImVec2(impl::screen()[0] * 0.5f, impl::screen()[1] * 0.5f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+        ImGui::SetNextWindowSize({ 900 , 600 });
+        ImGui::Begin("ESTATICS", &overlay, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoScrollbar);
+        
+
+        auto pos = ImGui::GetCursorScreenPos();
+
+        auto a = game::manager::get_map();
+        a = check_map(a);
+        std::string map;
+        if (a != -1)
+        {
+            
+            if (a >= 0 && a < 7)
+            {
+                ImGui::SetCursorPos({ 0,0 });
+                ImGui::Image(r_cast<ImTextureID>(bkgs[a].ptr_handle_cpu_pos), ImVec2(899, 599));
+            }
+      
+            switch (a)
+            {
+                case 0:
+                    map = "ERMO SELVAGEM\nO MONSTRO SAIU CORRENDO, O PAUNUNKU DE QUEM ESTA LENDO";
+                    break;
+                case 1:
+                    map ="FLORESTA ANCESTRAL\nO MONSTRO SAIU CORRENDO, O PAUNUNKU DE QUEM ESTA LENDO";
+                    break;
+                case 2:
+                    map ="PLANALTOS CORALINOS \nO MONSTRO SAIU CORRENDO, O PAUNUNKU DE QUEM ESTA LENDO";
+                    break;
+                case 3:
+                    map ="VALE PUTEFRATO \nO MONSTRO SAIU CORRENDO, O PAUNUNKU DE QUEM ESTA LENDO";
+                    break;
+                case 4:
+                    map= "FENDA DO ANCIAO \nO MONSTRO SAIU CORRENDO, O PAUNUNKU DE QUEM ESTA LENDO";
+                    break;
+                case 5:
+                    map = "FLORESTA GLACIAL \nO MONSTRO SAIU CORRENDO, O PAUNUNKU DE QUEM ESTA LENDO";
+                    break;
+                case 6:
+                    map = "ARENA\nO MONSTRO SAIU CORRENDO, O PAUNUNKU DE QUEM ESTA LENDO";
+                    break;
+            default:
+                map = "NONE NONE \n NANIIIIIIIII??????????";
+                break;
+            }
+            
+        }
+        draw::string(25, ImVec2(pos.x + 5, pos.y + 2), { 1,1,1,1 }, false, true, map.c_str());
+        draw::string(30, ImVec2(pos.x + 800, pos.y + 5), { 1,1,1,1 }, false, true, elapsed_time(tm).str().c_str());
+        ImGui::NewLine(); ImGui::NewLine();  ImGui::NewLine();
+        //draw::string(30, ImVec2((impl::screen()[0] * 0.5f) + 10, (impl::screen()[1] * 0.5f) -5), { 1,1,1,1 }, false, true, );
+
+        ImGui::Separator();
+        ImGui::BeginChild("Childe_of_players");
+        auto myplayer = uintptr_t(game::manager::i()->get_self_player());
+        if (myplayer)
+        {
+            for (auto& monster : game::manager::i()->hunting_damage())
+            {
+                if (ImGui::TreeNode(getMonsterName(monster.name).c_str()))
+                {
+                    ImGui::Separator();
+                    if (icon)
+                    {
+                        ImGui::Text("ICON");
+                    }
+                    ImGui::SameLine(100);
+                    ImGui::Text("Name");
+                    ImGui::SameLine(300);
+                    ImGui::Text("Damage");
+                    ImGui::SameLine(450);
+                    ImGui::Text("BEST");
+                    if (av)
+                    {
+                        ImGui::SameLine(600);
+                        ImGui::Text("AV");
+                    }
+                    if (less)
+                    {
+                        ImGui::SameLine(750);
+                        ImGui::Text("less");
+                    }
+
+                    for (auto& who_dam : monster.who_caused_damage)
+                    {
+                        int player_index = 0;
+                        uintptr_t size_player = 0x13F40;
+                        for (; player_index < 4; player_index++)
+                        {
+                            if (who_dam.entity == (myplayer + (size_player * player_index)))
+                                break;
+
+                        }
+                        ++player_index;
+                        ImGui::Separator();
+                        float mid = 0;
+                        if (icon)
+                        {
+                            ImGui::Image(r_cast<ImTextureID>(imgs[who_dam.type].ptr_handle_cpu_pos), ImVec2(s_cast<float>(imgs[who_dam.type].width / 2), s_cast<float>(imgs[who_dam.type].height / 2)));
+                            ImGui::SameLine(100);
+                        }
+
+                        ImGui::Text("PLAYER%d", player_index);
+                        ImGui::SameLine(300);
+                        ImGui::TextColored((ImVec4(0, 1, 0, 1)), std::to_string((int)who_dam.total_damage).c_str());
+                        ImGui::SameLine(450);
+                        ImGui::Text(std::to_string((int)who_dam.best_hit).c_str());
+                        if (av)
+                        {
+                            if (who_dam.hit_count > 0 && who_dam.total_damage > 0)
+                                mid = who_dam.total_damage / who_dam.hit_count;
+                            ImGui::SameLine(600);
+                            ImGui::TextColored((ImVec4(1, 1, 0, 1)), std::to_string((int)mid).c_str());
+                        }
+                        if (less)
+                        {
+                            ImGui::SameLine(750);
+                            ImGui::TextColored((ImVec4(1, 0, 0, 1)), std::to_string((int)who_dam.low_hit).c_str());
+                        }
+                       
+                    }
+                    ImGui::TreePop();
+                }
+               
+            }
+        }
+        ImGui::EndChild();
+        ImGui::End();
+    }
+
+
+    if ( false )
     {
         ImGui::PushStyleVar( ImGuiStyleVar_WindowMinSize, ImVec2( 15.f, 15.f ) );
 
@@ -155,62 +349,7 @@ void __stdcall overgay( )
       
         if ( finish_open )
         {
-            ImGui::BeginChild( "#EST", { form_width - 16.f, ( form_height - 12.f ) - button_height } );
-            if ( ImGui::TreeNode( "Options##MONSTER" ) )
-            {
-                //ImGui::Checkbox( "Auto Save", &saved ); // none now, myby button? for save one time?
-                ImGui::Checkbox( "Show average damage", &av );
-                ImGui::Checkbox( "Show less damage", &less );
-                ImGui::TreePop( );
-            }
-            auto myplayer = uintptr_t( game::manager::i( )->get_self_player( ) );
-            if ( myplayer )
-            {
-                for ( auto& monster : game::manager::i( )->hunting_damage( ) )
-                {
-                    if ( ImGui::TreeNode( getMonsterName( monster.name ).c_str( ) ) )
-                    {
-
-                        for ( auto& who_dam : monster.who_caused_damage )
-                        {
-                            int player_index = 0;
-                            uintptr_t size_player = 0x13F40;
-                            for ( ; player_index < 4; player_index++ )
-                            {
-                                if ( who_dam.entity == ( myplayer + ( size_player * player_index ) ) )
-                                    break;
-
-                            }
-                            ++player_index;
-                            float mid = 0;
-                            ImGui::Image( r_cast<ImTextureID>( imgs[ who_dam.type ].ptr_handle_cpu_pos ), ImVec2( s_cast<float>( imgs[ who_dam.type ].width / 2 ), s_cast<float>( imgs[ who_dam.type ].height / 2 ) ) );
-
-                            ImGui::SameLine( 55 );
-                            
-
-                            std::ostringstream show;
-
-                            show << " Player" << player_index << "-Damage:" << (int)who_dam.total_damage;
-
-                            show << ", Best:" << (int)who_dam.best_hit;
-
-                            if ( av )
-                            {
-                                if ( who_dam.hit_count > 0 && who_dam.total_damage > 0 )
-                                    mid = who_dam.total_damage / who_dam.hit_count;
-                                show << ", AV:" << (int)mid;
-                            }
-                            if ( less )
-                                show << ", LESS:" << (int)who_dam.low_hit;
-
-                            ImGui::Text( show.str( ).c_str( ) );
-
-                        }
-                        ImGui::TreePop( );
-                    }
-                }
-            }
-            ImGui::EndChild( );
+           
         
         }
         
@@ -225,7 +364,6 @@ void __stdcall overgay( )
         std::string dmg = "Damage Meter";
         if ( ImGui::Button( ((closed) ? dmg + " [SHOW]" : dmg + " [HIDE]" ).c_str( ), { float( form_width ), button_height } ) )
         {
-
             closed = !closed;
         }
         style.FramePadding.y = backup2_y;
@@ -233,15 +371,16 @@ void __stdcall overgay( )
         ImGui::End( );
         ImGui::PopStyleVar( );
 
-
-
-
     }
 
-    ImGui::GetIO( ).MouseDrawCursor = ImGui::IsWindowHovered( ImGuiHoveredFlags_AnyWindow );
+    ImGui::GetIO().MouseDrawCursor = ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow);
 
-    if ( !game::manager::i( )->in_hunting( ) )
+    if (!game::manager::i()->in_hunting())
+    {
+        tm = clock();
         return;
+    }
+      
 
     game::manager::i( )->entity_callback(  
     	[ ] ( game::s_entity entity ) -> void
@@ -286,73 +425,114 @@ void __stdcall overgay( )
             if (distance > distance_max)
                 return;
 
-            std::string hp_hud = " HP:" + std::to_string((int)entity.health) + "/" + std::to_string((int)entity.max_health);
-
-            auto bg_height = 50.f + ( 20.f * ( int( show_distance ) + int( show_entry ) ) );
-
-            drawn_background({ out.x, out.y }, 15, {210.f, bg_height });
-
-            auto bar_size = 170;
-
-            auto now_x = out.x + 20;
-            auto now_y = out.y + 10;
-
-            drawn_bar(entity.health, entity.max_health, bar_size, { now_x, now_y });
-
-            now_y += 15;
-            if ( show_hp_num )
+            /// HUD GREAT MONSTER
             {
-                draw::string( 18.f, ImVec2( now_x + ( bar_size / 2 ), now_y ), { 1, 1, 1, 1 }, true, true, hp_hud.c_str( ) );               
-            } 
+                std::string hp_hud = " HP:" + std::to_string((int)entity.health) + "/" + std::to_string((int)entity.max_health);
+
+                auto bg_height = 50.f + ( 20.f * ( int( show_distance ) + int( show_entry ) ) );
+
+                drawn_background({ out.x, out.y }, 15, {210.f, bg_height });
+
+                auto bar_size = 170;
+
+                auto now_x = out.x + 20;
+                auto now_y = out.y + 10;
+
+                drawn_bar(entity.health, entity.max_health, bar_size, { now_x, now_y });
+
+                now_y += 15;
+                if ( show_hp_num )
+                {
+                    draw::string( 18.f, ImVec2( now_x + ( bar_size / 2 ), now_y ), { 1, 1, 1, 1 }, true, true, hp_hud.c_str( ) );               
+                } 
             
 
-            now_y += 20;
-            draw::string( 18.f, ImVec2( now_x + ( bar_size / 2 ), now_y ), { 1, 1, 1, 1 }, true, true, file_monster.c_str( ) );
+                now_y += 20;
+                draw::string( 18.f, ImVec2( now_x + ( bar_size / 2 ), now_y ), { 1, 1, 1, 1 }, true, true, file_monster.c_str( ) );
             
 
-            if ( show_distance )
-            {
-                std::ostringstream ss;
-                ss << "Distance [ " << (int)distance << "]";
-                now_y += 20;
-                draw::string( 18.f, ImVec2( now_x + ( bar_size / 2 ), now_y ), { 1, 1, 1, 1 }, true, true, ss.str().c_str( ) );
-            }
+                if ( show_distance )
+                {
+                    std::ostringstream ss;
+                    ss << "Distance [ " << (int)distance << "]";
+                    now_y += 20;
+                    draw::string( 18.f, ImVec2( now_x + ( bar_size / 2 ), now_y ), { 1, 1, 1, 1 }, true, true, ss.str().c_str( ) );
+                }
 
-            if ( show_entry )
-            {
-                std::ostringstream ss;
-                ss << "ENTITY 0x" << std::hex << std::uppercase << entity.ptr << std::endl;
-                now_y += 20;
-                draw::string( 18.f, ImVec2( now_x + ( bar_size / 2 ), now_y ), { 1, 1, 1, 1 }, true, true, ss.str( ).c_str( ) );
+                if ( show_entry )
+                {
+                    std::ostringstream ss;
+                    ss << "ENTITY 0x" << std::hex << std::uppercase << entity.ptr << std::endl;
+                    now_y += 20;
+                    draw::string( 18.f, ImVec2( now_x + ( bar_size / 2 ), now_y ), { 1, 1, 1, 1 }, true, true, ss.str( ).c_str( ) );
+                }
             }
-
     	} );
 }
 
 void __stdcall filter_menu() {
-    /* GERADO COM IMGUI BUILDER :) TEM  8 Objetos & 1 forms */
-    ImGui::Begin("WConfig", &winconfig, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize );
-    ImGui::SetCursorPos({ 14.f,36.f });
-    if(ImGui::BeginChild("child0", { 364.f,235.f }, true))
+    if (winconfig)
     {
-        ImGui::SetCursorPos({ 14.f,15.f });
-        ImGui::Text("Distance:");
-        ImGui::SetCursorPos({ 14.f,40.f });
-        ImGui::SliderInt("##distance", &distance_max, 500, 50000);
-        ImGui::SetCursorPos({ 15.f,70.f });
-        ImGui::Checkbox("Show Statics", &show_estatics);
-        ImGui::SetCursorPos({ 190.f,70.f });
-        ImGui::Checkbox("Show Player", &show_player);
-        ImGui::SetCursorPos({ 15.f,100.f });
-        ImGui::Checkbox("Show HP Numeric", &show_hp_num);
-        ImGui::SetCursorPos({ 190.f,100.f });
-        ImGui::Checkbox("Show Distance", &show_distance);
-        ImGui::SetCursorPos({ 15.f,180 });
-        ImGui::Checkbox("[DEV] ADDRESS ENT", &show_entry);
-    } 
-    ImGui::EndChild();
-    ImGui::Text("Hello -> Press F2 to Show / Hide, statics! <- \\o.");
-    ImGui::End();
+        /* GERADO COM IMGUI BUILDER :) TEM  8 Objetos & 1 forms */
+        ImGui::Begin("WConfig", &winconfig, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize);
+        ImGui::SetCursorPos({ 14.f,36.f });
+        ImGuiTabBarFlags tab_bar_flags = ImGuiTabBarFlags_None;
+        if (ImGui::BeginChild("child0", { 364.f,235.f }, true))
+        {
+            if (ImGui::BeginTabBar("CTabs", tab_bar_flags))
+            {
+           
+
+               if (ImGui::BeginTabItem("Main"))
+               {
+                    //ImGui::SetCursorPos({ 14.f,15.f });
+                    ImGui::Text("Distance:");
+
+                    //ImGui::SetCursorPos({ 14.f,40.f });
+                    ImGui::SliderInt("##distance", &distance_max, 500, 50000);
+
+                    //ImGui::SetCursorPos({ 15.f,70.f });
+                    ImGui::Checkbox("Show Statics", &show_estatics);
+                    ImGui::SameLine(150);
+                    //ImGui::SetCursorPos({ 190.f,70.f });
+                    ImGui::Checkbox("Show Player", &show_player);
+                    //ImGui::SetCursorPos({ 15.f,100.f });
+                    ImGui::Checkbox("Show HP Numeric", &show_hp_num);
+                    ImGui::SameLine(150);
+                    //ImGui::SetCursorPos({ 190.f,100.f });
+                    ImGui::Checkbox("Show Distance", &show_distance);
+                    ImGui::EndTabItem();
+               }
+               if (ImGui::BeginTabItem("Statics"))
+               {
+                   ImGui::Checkbox("Show average damage", &av);
+                   ImGui::Checkbox("Show less damage", &less);
+
+                   ImGui::Text("Pos:");
+                   ImGui::RadioButton("Top", true);
+                   ImGui::SameLine(100);
+                   ImGui::RadioButton("Left", false);
+
+
+                   ImGui::EndTabItem();
+               }
+               if (ImGui::BeginTabItem("Dev"))
+               {
+                  ImGui::Checkbox("[DEV] ADDRESS ENT", &show_entry);
+                  ImGui::EndTabItem();
+               }
+
+            }
+    
+        ImGui::EndTabBar();
+        //ImGui::Separator();
+
+        }
+        ImGui::EndChild();
+        ImGui::Text("Hello -> Press F2 to Show / Hide, statics! <- \\o.");
+        ImGui::End();
+    }
+
 }
 
 

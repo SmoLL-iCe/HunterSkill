@@ -16,6 +16,9 @@ namespace impl
 	namespace d3d12
 	{
 		s_loaded_images* load_imgs();
+		
+		s_loaded_images* load_bkg();
+
 		void init();
 		float* screen( );
 		void set_menu(t_render_overlay p);

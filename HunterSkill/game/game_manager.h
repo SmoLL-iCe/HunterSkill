@@ -20,6 +20,7 @@ namespace game
 		std::vector<game::s_monster_damage>& hunting_damage( );
 		void set_damage( uintptr_t who_caused_damage, uintptr_t target, float damage );
 		bool m_updated_list = false;
+		static byte get_map();
 	private:
 		uintptr_t m_base = 0;
 		uintptr_t m_instance_mgr = 0;

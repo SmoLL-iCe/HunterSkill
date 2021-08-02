@@ -231,6 +231,13 @@ void game::manager::update_entities( )
 	m_updated_list = true;
 }
 
+byte game::manager::get_map()
+{
+	if (mem::is_valid_read(options::reversed::i()->ptr.get_mapp))
+		return	*r_cast<int*>(options::reversed::i()->ptr.get_mapp);
+
+	return 0;
+}
 
 void game::manager::set_damage( uintptr_t who_caused_damage, uintptr_t target, float damage )
 {
@@ -352,8 +359,9 @@ void game::manager::set_damage( uintptr_t who_caused_damage, uintptr_t target, f
 
 		}
 
-	}
+	
 
+	}
 
 
 	//std::ostringstream ss;

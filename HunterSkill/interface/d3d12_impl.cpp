@@ -57,6 +57,16 @@ s_loaded_images loaded_imgs[ ] = {
 	IMG_NUM( twelve )
 	IMG_NUM( thirteen )
 };
+s_loaded_images backgrounds[] = {
+	IMG_NUM(waste)
+	IMG_NUM(forest)
+	IMG_NUM(coral)
+	IMG_NUM(vale)
+	IMG_NUM(elter)
+	IMG_NUM(hoarfrost)
+	IMG_NUM(arena)
+};
+
 
 namespace DirectX12Interface 
 {
@@ -129,6 +139,19 @@ long __fastcall hkPresentDX12( IDXGISwapChain3* p_swap_chain, UINT sync_interval
 					if ( !LoadTextureFromMemory( img.buff, img.size, DirectX12Interface::Device, my_texture_srv_cpu_handle, &img.texture, &img.width, &img.height ) )
 					{
 						printf( "fail %d\n", descriptor_index );
+					}
+
+					++descriptor_index;
+				}
+				for (auto& img : backgrounds)
+				{
+					my_texture_srv_cpu_handle.ptr += (handle_increment * descriptor_index);
+					img.ptr_handle_cpu_pos = my_texture_srv_cpu_handle.ptr;
+
+
+					if (!LoadTextureFromMemory(img.buff, img.size, DirectX12Interface::Device, my_texture_srv_cpu_handle, &img.texture, &img.width, &img.height))
+					{
+						printf("fail %d\n", descriptor_index);
 					}
 
 					++descriptor_index;
@@ -290,6 +313,11 @@ HRESULT hkResizeBuffers( IDXGISwapChain3* pSwapChain, UINT BufferCount, UINT Wid
 s_loaded_images* impl::d3d12::load_imgs()
 {
 	return loaded_imgs;
+}
+
+s_loaded_images* impl::d3d12::load_bkg()
+{
+	return backgrounds;
 }
 
 void impl::d3d12::init( )
