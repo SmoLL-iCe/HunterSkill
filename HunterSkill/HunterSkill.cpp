@@ -207,6 +207,9 @@ void __stdcall overgay( )
 
         ImGui::SetNextWindowPos(ImVec2(impl::screen()[0] * 0.5f, impl::screen()[1] * 0.5f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
         ImGui::SetNextWindowSize({ 900 , 600 });
+        //ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 10.0f);
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.f);
         ImGui::Begin("ESTATICS", &overlay, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoScrollbar);
       
         auto pos = ImGui::GetCursorScreenPos();
@@ -215,19 +218,21 @@ void __stdcall overgay( )
         std::string map;
         if (a != -1)
         {
-            
+            //ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 10.0f);
             if (a >= 0 && a < 7)
             {
-                ImGui::SetCursorPos({ 0,0 });
+                ImGui::SetCursorPos({ -1,-1 });
                 ImGui::Image(r_cast<ImTextureID>(bkgs[a].ptr_handle_cpu_pos), ImVec2(899, 599));
                 ImGui::SetCursorPos({ 0,0 });
             }
             else
             {
-                ImGui::SetCursorPos({ 0,0 });
+                //ImDrawList::AddImageRounded(r_cast<ImTextureID>(bkgs[7].ptr_handle_cpu_pos), ImVec2(899, 599))
+                ImGui::SetCursorPos({ -1,-1 });
                 ImGui::Image(r_cast<ImTextureID>(bkgs[7].ptr_handle_cpu_pos), ImVec2(899, 599));
                 ImGui::SetCursorPos({ 0,0 });
             }
+            //ImGui::PopStyleVar();
       
             switch (a)
             {
@@ -258,13 +263,15 @@ void __stdcall overgay( )
             }
             
         }
-        draw::string(25, pos, { 1,1,1,1 }, false, true, map.c_str());
+        draw::string(25, { pos.x + 4, pos.y }, { 1,1,1,1 }, false, true, map.c_str());
         draw::string(30, ImVec2(pos.x + 800, pos.y + 5), { 1,1,1,1 }, false, true, elapsed_time(tm).str().c_str());
         ImGui::NewLine(); ImGui::NewLine();  ImGui::NewLine();
         pos = ImGui::GetCursorPos();
-        ImGui::SetCursorPos({ pos.x, pos.y - 5 });
+        ImGui::SetCursorPos({ pos.x, pos.y - 11 });
         ImGui::Separator();
-        ImGui::BeginChild("Childe_of_players");
+        pos = ImGui::GetCursorPos();
+        ImGui::SetCursorPos({ pos.x+10, pos.y});
+        ImGui::BeginChild("Childe_of_players", {875,500});
         auto myplayer = uintptr_t(game::manager::i()->get_self_player());
         if (myplayer)
         {
@@ -297,6 +304,8 @@ void __stdcall overgay( )
 
                     for (auto& who_dam : monster.who_caused_damage)
                     {
+    
+
                         int player_index = 0;
                         uintptr_t size_player = 0x13F40;
                         for (; player_index < 4; player_index++)
@@ -340,6 +349,8 @@ void __stdcall overgay( )
         }
         ImGui::EndChild();
         ImGui::End();
+        ImGui::PopStyleVar();
+        ImGui::PopStyleVar();
     }
 
 
