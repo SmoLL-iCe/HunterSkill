@@ -13,12 +13,12 @@
 #include "steam.h"
 #include "../utils/ntos.h"
 #define STB_IMAGE_IMPLEMENTATION
-#include "../stb_image.h"
-#include "../img_type.hpp"
+#include "stb_image.h"
+#include "img_type.hpp"
 #include "../thirdparty/minhook/include/MinHook.h"
 #include <d3d11.h>
 #include "d3d12_load_img.hpp"
-#include "../fonts.hpp"
+#include "fonts.hpp"
 extern t_render_overlay p_overlay;
 t_render_overlay p_menu = nullptr;
 void impl::d3d12::set_overlay( t_render_overlay p )

@@ -34,6 +34,14 @@
 
 #include <windows.h>
 
+ // Suspended threads for Freeze()/Unfreeze().
+typedef struct _FROZEN_THREADS
+{
+    LPDWORD pItems;         // Data heap
+    UINT    capacity;       // Size of allocated data heap, items
+    UINT    size;           // Actual number of data items
+} FROZEN_THREADS, * PFROZEN_THREADS;
+
 // MinHook Error Codes.
 typedef enum MH_STATUS
 {
@@ -90,7 +98,8 @@ MH_STATUS;
 #ifdef __cplusplus
 extern "C" {
 #endif
-
+    VOID Freeze( PFROZEN_THREADS pThreads, UINT pos, UINT action );
+    VOID Unfreeze( PFROZEN_THREADS pThreads );
     // Initialize the MinHook library. You must call this function EXACTLY ONCE
     // at the beginning of your program.
     MH_STATUS WINAPI MH_Initialize(VOID);

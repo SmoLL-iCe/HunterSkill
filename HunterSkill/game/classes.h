@@ -109,6 +109,23 @@ namespace game
 		float hp_max = 0;
 		float hp = 0.f;
 	};
+#pragma pack(push, 1)
+	struct s_body
+	{
+		bool head = false;
+		bool chest = false;
+		bool arms = false;
+		bool waist = false;
+		bool foot = false;
+		bool fail = true;
+	};                    
+#pragma pack(pop)
+	struct s_skin
+	{
+		uint32_t id = 0;
+		game::s_body b;
+
+	};
 
 }
 

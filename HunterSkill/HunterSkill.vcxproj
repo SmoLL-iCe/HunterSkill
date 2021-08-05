@@ -144,22 +144,23 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="fonts.hpp" />
     <ClInclude Include="game\classes.h" />
     <ClInclude Include="game\game_manager.h" />
     <ClInclude Include="game\hooks.h" />
+    <ClInclude Include="game\hunter_skin.h" />
+    <ClInclude Include="game\Monster_names.hpp" />
     <ClInclude Include="game\shared_config.h" />
     <ClInclude Include="header.h" />
-    <ClInclude Include="img_type.hpp" />
     <ClInclude Include="interface\d3d11_impl.h" />
     <ClInclude Include="interface\d3d12_impl.h" />
     <ClInclude Include="interface\d3d12_load_img.hpp" />
+    <ClInclude Include="interface\fonts.hpp" />
     <ClInclude Include="interface\ImDraw.h" />
+    <ClInclude Include="interface\img_type.hpp" />
     <ClInclude Include="interface\menu.h" />
+    <ClInclude Include="interface\stb_image.h" />
     <ClInclude Include="interface\steam.h" />
     <ClInclude Include="interface\win32_impl.h" />
-    <ClInclude Include="Monster_names.hpp" />
-    <ClInclude Include="stb_image.h" />
     <ClInclude Include="thirdparty\imgui\imconfig.h" />
     <ClInclude Include="thirdparty\imgui\imgui.h" />
     <ClInclude Include="thirdparty\imgui\imgui_impl_dx11.h" />

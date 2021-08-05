@@ -1,4 +1,4 @@
-
+﻿
 #include "header.h"
 #include "interface/d3d11_impl.h"
 #include "interface/d3d12_impl.h"
@@ -6,10 +6,11 @@
 #include "game/shared_config.h"
 #include "game/game_manager.h"
 #include "utils/mem.h"
+#include "game/hunter_skin.h"
 
 #include "thirdparty/imgui/imgui.h"
 #include "game/hooks.h"
-#include "Monster_names.hpp"
+#include "game/Monster_names.hpp"
 #include "thirdparty/minhook/include/MinHook.h"
 #include "interface/ImDraw.h"
 #include <iomanip>
@@ -140,7 +141,7 @@ int check_map(byte mp)
         return 2;
     if (mp == 42 || mp == 29 || mp == 12 || mp == 25 || mp == 162)//PUTEFRATO
         return 3; 
-    if (mp == 31 || mp == 33 || mp == 160 || mp == 37 || mp == 236)//FENDA DO ANCI�O
+    if (mp == 31 || mp == 33 || mp == 160 || mp == 37 || mp == 236)//FENDA DO ANCIÃO
         return 4;
     if (mp == 43 || mp == 62 || mp == 8 || mp == 34 || mp == 21)//GLACIAL
         return 5; 
@@ -149,17 +150,71 @@ int check_map(byte mp)
 
     return -1;
 }
+#define checkBox( val )  \
+    if ( b.val ) \
+        ImGui::Checkbox( #val, &active.val ); \
+    else \
+        active.val = false;
+
+void __stdcall skin_menu( )
+{
+    static auto skin_id = 1;
+    static auto old_skin_id = 0;
+    static bool fix_skin = true;
+    static bool old_fix_skin = true;
+    static game::s_body b;
+    static game::s_body active;
+    ImGui::Begin( "skin", &winconfig, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize );
+    ImGui::Checkbox( "freeze_skin", &fix_skin );
+    if ( fix_skin != old_fix_skin )
+    {
+        old_fix_skin = fix_skin;
+
+        options::reversed::i( )->ptr.fix_skin[ 0 ] = ( fix_skin ) ? 0xEB : 0x74;
+    }
+    ImGui::SliderInt( "skin id", &skin_id, 1, 727 );
+    if ( skin_id >= 1 && skin_id <= 727 )
+    {
+        if ( old_skin_id != skin_id )
+        {
+            for ( auto& skin : skins )
+            {
+                if ( skin.id == skin_id )
+                {
+                    b = skin.b;
+                    break;
+                }
+            }
+            //active = b;
+            old_skin_id = skin_id;
+        }
+    }
 
 
+    checkBox( head );
+    checkBox( chest );
+    checkBox( arms );
+    checkBox( waist );
+    checkBox( foot );
+
+    if ( ImGui::Button( "power rangers, ativar", { 300, 25 } ) )
+    {
+        old_fix_skin = !fix_skin;
+        auto result = game::manager::i( )->set_skin_parts( skin_id, active );
+    }
+
+    ImGui::End( );
+
+}
 
 
 void __stdcall overgay( )
 {
-    
+    skin_menu( );
     
     auto width = impl::screen( )[ 0 ];
-    auto form_width = float( 400 );
-    auto form_height = 130.f;
+    auto form_width = float( 380 );
+    auto form_height = 210.f;
     float button_height = 18.f;
     float closed_height = button_height + 6.f;
     float inc_val = 3.f;
@@ -354,7 +409,7 @@ void __stdcall overgay( )
     }
 
 
-    if ( false )
+    //if ( false )
     {
         ImGui::PushStyleVar( ImGuiStyleVar_WindowMinSize, ImVec2( 15.f, 15.f ) );
 
@@ -366,7 +421,58 @@ void __stdcall overgay( )
       
         if ( finish_open )
         {
-           
+            if ( ImGui::BeginChild( "child0", { 364.f, 180.f }, true ) )
+            {
+                if ( ImGui::BeginTabBar( "CTabs", ImGuiTabBarFlags_None ) )
+                {
+
+
+                    if ( ImGui::BeginTabItem( "Main" ) )
+                    {
+                        //ImGui::SetCursorPos({ 14.f,15.f });
+                        ImGui::Text( "Distance:" );
+
+                        //ImGui::SetCursorPos({ 14.f,40.f });
+                        ImGui::SliderInt( "##distance", &distance_max, 500, 50000 );
+
+                        //ImGui::SetCursorPos({ 15.f,70.f });
+                        ImGui::Checkbox( "Show Statics", &show_estatics );
+                        ImGui::SameLine( 150 );
+                        //ImGui::SetCursorPos({ 190.f,70.f });
+                        ImGui::Checkbox( "Show Player", &show_player );
+                        //ImGui::SetCursorPos({ 15.f,100.f });
+                        ImGui::Checkbox( "Show HP Numeric", &show_hp_num );
+                        ImGui::SameLine( 150 );
+                        //ImGui::SetCursorPos({ 190.f,100.f });
+                        ImGui::Checkbox( "Show Distance", &show_distance );
+                        ImGui::EndTabItem( );
+                    }
+                    if ( ImGui::BeginTabItem( "Statics" ) )
+                    {
+                        ImGui::Checkbox( "Show average damage", &av );
+                        ImGui::Checkbox( "Show less damage", &less );
+
+                        ImGui::Text( "Pos:" );
+                        ImGui::RadioButton( "Top", true );
+                        ImGui::SameLine( 100 );
+                        ImGui::RadioButton( "Left", false );
+
+
+                        ImGui::EndTabItem( );
+                    }
+                    if ( ImGui::BeginTabItem( "Dev" ) )
+                    {
+                        ImGui::Checkbox( "[DEV] ADDRESS ENT", &show_entry );
+                        ImGui::EndTabItem( );
+                    }
+
+                }
+
+                ImGui::EndTabBar( );
+                //ImGui::Separator();
+
+            }
+            ImGui::EndChild( );
         
         }
         
@@ -378,7 +484,7 @@ void __stdcall overgay( )
         auto backup2_y = style.FramePadding.y;
         style.FramePadding.y = -1.3f;
         style.ButtonTextAlign.y = 0.f;
-        std::string dmg = "Damage Meter";
+        std::string dmg = "HunterSkill Config";
         if ( ImGui::Button( ((closed) ? dmg + " [SHOW]" : dmg + " [HIDE]" ).c_str( ), { float( form_width ), button_height } ) )
         {
             closed = !closed;
@@ -487,67 +593,17 @@ void __stdcall overgay( )
     	} );
 }
 
+
 void __stdcall filter_menu() {
     if (winconfig)
     {
-        /* GERADO COM IMGUI BUILDER :) TEM  8 Objetos & 1 forms */
-        ImGui::Begin("WConfig", &winconfig, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize);
-        ImGui::SetCursorPos({ 14.f,36.f });
-        ImGuiTabBarFlags tab_bar_flags = ImGuiTabBarFlags_None;
-        if (ImGui::BeginChild("child0", { 364.f,235.f }, true))
-        {
-            if (ImGui::BeginTabBar("CTabs", tab_bar_flags))
-            {
-           
+        ///* GERADO COM IMGUI BUILDER :) TEM  8 Objetos & 1 forms */
+        //ImGui::Begin("WConfig", &winconfig, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize);
+        //ImGui::SetCursorPos({ 14.f,36.f });
+        //ImGuiTabBarFlags tab_bar_flags = ImGuiTabBarFlags_None;
 
-               if (ImGui::BeginTabItem("Main"))
-               {
-                    //ImGui::SetCursorPos({ 14.f,15.f });
-                    ImGui::Text("Distance:");
-
-                    //ImGui::SetCursorPos({ 14.f,40.f });
-                    ImGui::SliderInt("##distance", &distance_max, 500, 50000);
-
-                    //ImGui::SetCursorPos({ 15.f,70.f });
-                    ImGui::Checkbox("Show Statics", &show_estatics);
-                    ImGui::SameLine(150);
-                    //ImGui::SetCursorPos({ 190.f,70.f });
-                    ImGui::Checkbox("Show Player", &show_player);
-                    //ImGui::SetCursorPos({ 15.f,100.f });
-                    ImGui::Checkbox("Show HP Numeric", &show_hp_num);
-                    ImGui::SameLine(150);
-                    //ImGui::SetCursorPos({ 190.f,100.f });
-                    ImGui::Checkbox("Show Distance", &show_distance);
-                    ImGui::EndTabItem();
-               }
-               if (ImGui::BeginTabItem("Statics"))
-               {
-                   ImGui::Checkbox("Show average damage", &av);
-                   ImGui::Checkbox("Show less damage", &less);
-
-                   ImGui::Text("Pos:");
-                   ImGui::RadioButton("Top", true);
-                   ImGui::SameLine(100);
-                   ImGui::RadioButton("Left", false);
-
-
-                   ImGui::EndTabItem();
-               }
-               if (ImGui::BeginTabItem("Dev"))
-               {
-                  ImGui::Checkbox("[DEV] ADDRESS ENT", &show_entry);
-                  ImGui::EndTabItem();
-               }
-
-            }
-    
-        ImGui::EndTabBar();
-        //ImGui::Separator();
-
-        }
-        ImGui::EndChild();
-        ImGui::Text("Hello -> Press F2 to Show / Hide, statics! <- \\o.");
-        ImGui::End();
+        //ImGui::Text("Hello -> Press F2 to Show / Hide, statics! <- \\o.");
+        //ImGui::End();
     }
 
 }
@@ -598,6 +654,10 @@ int check_support()
 }
 
 
+
+
+
+
 int main( )
 {
     
@@ -624,9 +684,14 @@ int main( )
         // set menu filter ? 
     }
 
+
+
     hooks::init( );
 
     bool init_hunting = false;
+
+    DWORD p;
+    VirtualProtect( options::reversed::i( )->ptr.fix_skin, 1, PAGE_EXECUTE_READWRITE, &p );
 
     while ( true )
     {

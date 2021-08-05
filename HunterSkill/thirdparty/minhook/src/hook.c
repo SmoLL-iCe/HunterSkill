@@ -74,14 +74,6 @@ typedef struct _HOOK_ENTRY
     UINT8  newIPs[8];           // Instruction boundaries of the trampoline function.
 } HOOK_ENTRY, *PHOOK_ENTRY;
 
-// Suspended threads for Freeze()/Unfreeze().
-typedef struct _FROZEN_THREADS
-{
-    LPDWORD pItems;         // Data heap
-    UINT    capacity;       // Size of allocated data heap, items
-    UINT    size;           // Actual number of data items
-} FROZEN_THREADS, *PFROZEN_THREADS;
-
 //-------------------------------------------------------------------------
 // Global Variables:
 //-------------------------------------------------------------------------
@@ -304,7 +296,7 @@ static VOID EnumerateThreads(PFROZEN_THREADS pThreads)
 }
 
 //-------------------------------------------------------------------------
-static VOID Freeze(PFROZEN_THREADS pThreads, UINT pos, UINT action)
+EXTERN_C VOID Freeze(PFROZEN_THREADS pThreads, UINT pos, UINT action)
 {
     pThreads->pItems   = NULL;
     pThreads->capacity = 0;
@@ -328,7 +320,7 @@ static VOID Freeze(PFROZEN_THREADS pThreads, UINT pos, UINT action)
 }
 
 //-------------------------------------------------------------------------
-static VOID Unfreeze(PFROZEN_THREADS pThreads)
+EXTERN_C VOID Unfreeze(PFROZEN_THREADS pThreads)
 {
     if (pThreads->pItems != NULL)
     {
@@ -338,6 +330,8 @@ static VOID Unfreeze(PFROZEN_THREADS pThreads)
             HANDLE hThread = OpenThread(THREAD_ACCESS, FALSE, pThreads->pItems[i]);
             if (hThread != NULL)
             {
+                ResumeThread(hThread);
+                ResumeThread(hThread);
                 ResumeThread(hThread);
                 CloseHandle(hThread);
             }

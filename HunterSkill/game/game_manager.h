@@ -19,6 +19,9 @@ namespace game
 		void clear_boss( );
 		std::vector<game::s_monster_damage>& hunting_damage( );
 		void set_damage( uintptr_t who_caused_damage, uintptr_t target, float damage );
+		s_body set_skin_full( uintptr_t entity, uint32_t skin_id );
+		s_body set_self_skin_full( uint32_t skin_id );
+		bool set_skin_parts( uint32_t skin_id, game::s_body b );
 		bool m_updated_list = false;
 		static byte get_map();
 	private:

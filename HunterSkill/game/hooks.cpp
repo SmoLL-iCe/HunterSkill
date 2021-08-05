@@ -90,6 +90,15 @@ char __fastcall show_damage_4( __int64 pre_entity_target, __int64 whoCausedDamag
 	return reinterpret_cast<decltype( show_damage_4 )*>( options::reversed::i( )->ptr.damage_meter_func )( pre_entity_target, whoCausedDamage, damage_info );
 }
 
+void* osub_142258160 = (void*)0x142258160;
+unsigned __int64 __fastcall sub_142258160( __int64 a1, int* a2, __int64 a3 )
+{
+	auto sub_localPlayer8 = *(uintptr_t*)(a1 + 0x04C0 );
+	if ( !sub_localPlayer8 )
+		return 0;
+	return reinterpret_cast<decltype( sub_142258160 )*>( osub_142258160 )( a1, a2, a3 );
+}
+
 bool hooks::init( )
 {
 	while ( options::reversed::i( )->ptr.func_crash[ 0 ] != 0x85 )
@@ -99,6 +108,7 @@ bool hooks::init( )
 
 	uint8_t* ac[ ] =
 	{
+
 		u8ptr( 0x142781010 ),
 		u8ptr( 0x142782790 ),
 		u8ptr( 0x142758DD0 ),
@@ -113,6 +123,10 @@ bool hooks::init( )
 
 		//pl
 		u8ptr( 0x14277B210 ),
+
+		//sub_142258160 hook
+		u8ptr( 0x142757A10 ),
+		u8ptr( 0x14277F890 ),
 	};
 
 	for ( auto* ptr : ac )
@@ -127,10 +141,11 @@ bool hooks::init( )
 	}
 
 	//return true;
+	hook( sub_142258160, osub_142258160 );
 	hook( show_damage_4, options::reversed::i( )->ptr.damage_meter_func );
 	auto is_ok = hook( ReportProblem, options::reversed::i( )->ptr.func_crash );
 	Sleep( 5000 );
-	auto p_handle = AddVectoredExceptionHandler( 1, internal_handler );
+	//auto p_handle = AddVectoredExceptionHandler( 1, internal_handler );
 	return is_ok;
 }
 

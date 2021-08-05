@@ -125,22 +125,25 @@
     <ClInclude Include="game\hooks.h">
       <Filter>game</Filter>
     </ClInclude>
-    <ClInclude Include="stb_image.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Monster_names.hpp">
-      <Filter>game</Filter>
-    </ClInclude>
-    <ClInclude Include="img_type.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="interface\d3d12_load_img.hpp">
       <Filter>interface</Filter>
     </ClInclude>
-    <ClInclude Include="fonts.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="interface\ImDraw.h">
+      <Filter>interface</Filter>
+    </ClInclude>
+    <ClInclude Include="game\Monster_names.hpp">
+      <Filter>game</Filter>
+    </ClInclude>
+    <ClInclude Include="interface\fonts.hpp">
+      <Filter>interface</Filter>
+    </ClInclude>
+    <ClInclude Include="interface\img_type.hpp">
+      <Filter>interface</Filter>
+    </ClInclude>
+    <ClInclude Include="game\hunter_skin.h">
+      <Filter>game</Filter>
+    </ClInclude>
+    <ClInclude Include="interface\stb_image.h">
       <Filter>interface</Filter>
     </ClInclude>
   </ItemGroup>

@@ -6,6 +6,7 @@
 #include "../interface/d3d11_impl.h"
 #include <vector>
 #include <sstream>
+#include "../thirdparty/minhook/include/MinHook.h"
 
 game::manager* c_manager = nullptr;
 
@@ -94,6 +95,15 @@ void game::manager::entity_callback( entity_cb func )
 
 game::c_entity* game::manager::get_self_player( )
 {
+	if ( !m_localplayer )
+	{
+
+		auto bs = *reinterpret_cast<uintptr_t*>( options::reversed::i( )->ptr.to_lp );
+
+		if ( !bs ) return 0 ;
+
+		m_localplayer = reinterpret_cast<uintptr_t( __fastcall* )( uintptr_t )>( options::reversed::i( )->ptr.get_lp )( bs );
+	}
 	return r_cast<c_entity*>( m_localplayer );
 }
 
@@ -363,10 +373,107 @@ void game::manager::set_damage( uintptr_t who_caused_damage, uintptr_t target, f
 
 	}
 
+}
 
-	//std::ostringstream ss;
-	//ss << "Attack from" << ( ( isSelfPlayerDamage ) ? " SelfPlayer " : " " ) << "0x" << std::hex << std::uppercase << who_caused_damage << ", to target" <<
-	//	( ( isSelfPlayerTarget ) ? " SelfPlayer " : " " ) << "0x" << target << " Damage " << std::dec << (int)damage;
+game::s_body game::manager::set_skin_full( uintptr_t entity, uint32_t skin_id )
+{
+	if ( !entity || !skin_id )
+		return{ };
 
-	//std::cout << ss.str( ) << std::endl;;
+	game::s_body b;
+
+	auto result = r_cast<uint8_t*>( &b );
+
+	auto sub_localPlayer = *r_cast<uintptr_t*>( entity + 0x126C8i64 );
+
+	 FROZEN_THREADS threads;
+	 Freeze( &threads, UINT_MAX, 1 );
+
+	if ( sub_localPlayer )
+		for ( size_t i = 0; i < 5; i++ )
+		{
+			auto old_skin = *r_cast<uint32_t*>( entity + 4i64 * i + 0x13754 );
+
+			auto SubModel = *r_cast<uintptr_t*>( ( (unsigned __int64)i << 7 ) + sub_localPlayer + 0x70 );
+
+			if ( !SubModel )
+				continue;
+
+			Sleep( 20 );
+			reinterpret_cast<void( __fastcall* )( uintptr_t, unsigned int, unsigned int )>( 0x1412FFA80 )( sub_localPlayer, i, skin_id );
+
+			auto apllyed_ptr1 = *r_cast<uintptr_t*>( SubModel + 0x4A8 );
+
+			auto applied_ptr2 = *r_cast<uintptr_t*>( SubModel + 0x4C0 );
+
+			result[ i ] = ( apllyed_ptr1 && applied_ptr2 );
+
+			if ( result[ i ] )
+			{
+				*r_cast<uint32_t*>( entity + 4i64 * i + 0x13754 ) = skin_id;
+				b.fail = false;
+			}
+			else
+			{
+				Sleep( 20 );
+				reinterpret_cast<void( __fastcall* )( uintptr_t, unsigned int, unsigned int )>( 0x1412FFA80 )( sub_localPlayer, i, old_skin );
+			}
+
+		}
+	Unfreeze( &threads );
+	return b;
+
+}
+
+
+game::s_body game::manager::set_self_skin_full( uint32_t skin_id )
+{
+	auto myplayer = uintptr_t( get_self_player( ) );
+	return set_skin_full( myplayer, skin_id );
+}
+
+bool game::manager::set_skin_parts( uint32_t skin_id, game::s_body b )
+{
+	auto entity = uintptr_t( get_self_player( ) );
+	if ( !entity || !skin_id )
+		return false;
+
+	auto result = r_cast<uint8_t*>( &b );
+
+	auto sub_localPlayer = *r_cast<uintptr_t*>( entity + 0x126C8i64 );
+
+	FROZEN_THREADS threads;
+	Freeze( &threads, UINT_MAX, 1 );
+
+	if ( sub_localPlayer )
+		for ( size_t i = 0; i < 5; i++ )
+		{
+			if ( !result[ i ] ) continue;
+
+			auto old_skin = *r_cast<uint32_t*>( entity + 4i64 * i + 0x13754 );
+
+			auto SubModel = *r_cast<uintptr_t*>( ( (unsigned __int64)i << 7 ) + sub_localPlayer + 0x70 );
+
+			if ( !SubModel )
+				continue;
+
+			Sleep( 20 );
+			reinterpret_cast<void( __fastcall* )( uintptr_t, unsigned int, unsigned int )>( 0x1412FFA80 )( sub_localPlayer, i, skin_id );
+
+			auto apllyed_ptr1 = *r_cast<uintptr_t*>( SubModel + 0x4A8 );
+
+			auto applied_ptr2 = *r_cast<uintptr_t*>( SubModel + 0x4C0 );
+
+			if (   apllyed_ptr1 && applied_ptr2 )
+			{
+				*r_cast<uint32_t*>( entity + 4i64 * i + 0x13754 ) = skin_id;
+			}
+			else
+			{
+				Sleep( 20 );
+				reinterpret_cast<void( __fastcall* )( uintptr_t, unsigned int, unsigned int )>( 0x1412FFA80 )( sub_localPlayer, i, old_skin );
+			}
+
+		}
+	Unfreeze( &threads );
 }
