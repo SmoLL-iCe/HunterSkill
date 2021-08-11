@@ -10,6 +10,8 @@ options::config::config( )
 
 options::config* options::config::i( )
 {
+	if ( !current_config )
+		current_config = new options::config( );
 	return current_config;
 }
 

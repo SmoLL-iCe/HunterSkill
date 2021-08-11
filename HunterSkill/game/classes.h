@@ -118,7 +118,16 @@ namespace game
 		bool waist = false;
 		bool foot = false;
 		bool fail = true;
-	};                    
+	};
+	struct s_body_ids
+	{
+		uint32_t head = 0xFFFFFFFF;
+		uint32_t chest = 0xFFFFFFFF;;
+		uint32_t arms = 0xFFFFFFFF;
+		uint32_t waist = 0xFFFFFFFF;
+		uint32_t foot = 0xFFFFFFFF;
+		uint32_t fail = 0xFFFFFFFF;
+	};
 #pragma pack(pop)
 	struct s_skin
 	{

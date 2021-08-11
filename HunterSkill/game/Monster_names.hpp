@@ -75,3 +75,27 @@ std::vector<std::string> monster_name =
 "em127_00 Liche",
 "em127_01 Liche Anciao"
 };
+
+std::string getMonsterName( std::string file_monster )
+{
+
+    //std::string file_monster = entity.file;
+    size_t erease = file_monster.find( "mod" );
+
+    if ( erease != std::string::npos ) file_monster = file_monster.substr( erease + 4 );
+
+    for ( const auto mh : monster_name )
+    {
+        size_t find = mh.find( file_monster );
+        if ( find != std::string::npos )
+        {
+            file_monster = mh.substr( file_monster.length( ) + 1 );
+            break;
+        }
+    }
+
+    if ( !file_monster.compare( "em001_00 Rathian" ) )
+        file_monster.clear( );
+
+    return file_monster;
+}

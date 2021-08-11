@@ -14,6 +14,8 @@ namespace options
 		bool is_dev_mode		= false;
 		bool use_logger			= false;
 		bool console_enable		= true;
+		bool skin_change		= false;
+		bool fix_skin = true;
 
 	};
 
@@ -32,7 +34,8 @@ namespace options
 			uint8_t* ptr_ingame = U8PTR( 0x1451C3FE0 );
 			uint8_t* damage_meter_func = U8PTR( 0x1402C3C60 );
 			uint8_t* get_mapp = U8PTR(0x14525D288); //ES[220] FA[180] FG[8] VP[12] PC[136] FDA[160] BASE[60] ARENA[144]
-			uint8_t* fix_skin = U8PTR(0x1412659BD );
+			uint8_t* modified_skin = U8PTR(0x0141265770 );
+			uint8_t* get_skin_ptr = U8PTR( 0x141680FD0 );
 		}ptr;
 		//=====================//=====================
 		struct c_offset

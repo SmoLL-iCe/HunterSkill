@@ -21,9 +21,11 @@ namespace game
 		void set_damage( uintptr_t who_caused_damage, uintptr_t target, float damage );
 		s_body set_skin_full( uintptr_t entity, uint32_t skin_id );
 		s_body set_self_skin_full( uint32_t skin_id );
+		static bool is_valid_skin( uint32_t index, uint32_t skin_id );
 		bool set_skin_parts( uint32_t skin_id, game::s_body b );
 		bool m_updated_list = false;
 		static byte get_map();
+		game::s_body_ids current_skin{ };
 	private:
 		uintptr_t m_base = 0;
 		uintptr_t m_instance_mgr = 0;

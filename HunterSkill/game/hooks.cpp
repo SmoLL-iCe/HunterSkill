@@ -5,6 +5,7 @@
 #include "../thirdparty/minhook/include/MinHook.h"
 #include "../utils/utils.h"
 #include <intrin.h>
+#include <istream>
 #include "game_manager.h"
 
 template <typename A1, typename A2>
@@ -90,13 +91,108 @@ char __fastcall show_damage_4( __int64 pre_entity_target, __int64 whoCausedDamag
 	return reinterpret_cast<decltype( show_damage_4 )*>( options::reversed::i( )->ptr.damage_meter_func )( pre_entity_target, whoCausedDamage, damage_info );
 }
 
-void* osub_142258160 = (void*)0x142258160;
-unsigned __int64 __fastcall sub_142258160( __int64 a1, int* a2, __int64 a3 )
+//void* ochange_skin_internal = (void*)0x1419B3B20;
+//char* __fastcall change_skin_internal( char* a1, char feminine, unsigned int body_index, unsigned int skin_id ) 
+//{
+//	//skin_id = 0x1A4;
+//	auto ret = reinterpret_cast<decltype( change_skin_internal )*>( ochange_skin_internal )( a1, feminine, body_index, skin_id );
+//
+//
+//	auto p = game::manager::i( )->get_self_player( );
+//
+//	printf( " %d, %p\n",feminine, p );
+//	return ret;
+//
+//}
+//
+//
+//void* oget_current_skin_id = (void*)0x01419B3000;
+//__int64 __fastcall get_current_skin_id( __int64 ptr, unsigned int index )
+//{
+//	auto p = game::manager::i( )->get_self_player( );
+//	if ( __int64( p + 0x13690 ) == ptr )
+//		return 0x1A4;
+//
+//	auto skin_id = reinterpret_cast<decltype( get_current_skin_id )*>( oget_current_skin_id )( ptr, index );
+//
+//	return skin_id;
+//}
+
+void* omodified_skin = (void*)0x141265770;
+__int64 __fastcall modified_skin( __int64 ptr1, __int64 ptr2 )
 {
-	auto sub_localPlayer8 = *(uintptr_t*)(a1 + 0x04C0 );
-	if ( !sub_localPlayer8 )
-		return 0;
-	return reinterpret_cast<decltype( sub_142258160 )*>( osub_142258160 )( a1, a2, a3 );
+	static int loaded = 0;
+	auto result = r_cast<uint32_t*>( &game::manager::i( )->current_skin );
+	auto p = game::manager::i( )->get_self_player( );
+	if ( !p )
+	{
+
+		if ( !loaded )
+		{
+			++loaded;
+			std::ifstream fin;
+			std::string word;
+			fin.open( "skin.ini", std::ifstream::in );
+			if ( fin.good( ) )
+			{
+				++loaded;
+				fin >> word >> options::config::i( )->fix_skin;
+
+				for ( size_t i = 0; i < 5; i++ )
+						fin >> word >> result[ i ];
+				fin.close( );
+				if ( options::config::i( )->fix_skin )
+					++loaded;
+
+			}
+
+
+
+		}
+		if ( loaded == 3  )
+		{
+			for ( size_t i = 0; i < 5; i++ )
+			{
+				if ( result[ i ] && result[ i ] != 0xFFFFFFFF )
+				{
+					*r_cast<uint32_t*>( ptr2 + 4 * i + 0xC4 ) = result[ i ];
+
+				}
+			}
+		}
+
+	
+	}
+	else
+	{
+		auto val2 = *r_cast<uintptr_t*>( p + 0x13690 + 0xA0 ) == *r_cast<uintptr_t*>( ptr2 + 0xA0 );
+		if ( options::config::i( )->fix_skin &&  val2 )
+		{
+			auto result = r_cast<uint32_t*>( &game::manager::i( )->current_skin );
+			for ( size_t i = 0; i < 5; i++ )
+			{
+				if ( result[ i ] && result[ i ] != 0xFFFFFFFF )
+				{
+					*r_cast<uint32_t*>( ptr2 + 4 * i + 0xC4 ) = result[ i ];
+					*r_cast<uint32_t*>( p + 4 * i + 0x13690 + 0xC4 ) = result[ i ];
+
+
+
+				}
+			}
+			auto anotherptr = *r_cast<uintptr_t*>( p + 0x14F8 );
+			if ( anotherptr )
+			{
+				*(BYTE*)( anotherptr + 0x4A45 ) = 1;
+			
+			}
+
+		}
+	
+	
+	}
+
+	return reinterpret_cast<decltype( modified_skin )*>( omodified_skin )( ptr1, ptr2 );
 }
 
 bool hooks::init( )
@@ -125,8 +221,11 @@ bool hooks::init( )
 		u8ptr( 0x14277B210 ),
 
 		//sub_142258160 hook
-		u8ptr( 0x142757A10 ),
-		u8ptr( 0x14277F890 ),
+		//u8ptr( 0x142757A10 ),
+		//u8ptr( 0x14277F890 ),
+
+		//change_skin_internal
+		u8ptr( 0x14277A650 ),
 	};
 
 	for ( auto* ptr : ac )
@@ -141,7 +240,9 @@ bool hooks::init( )
 	}
 
 	//return true;
-	hook( sub_142258160, osub_142258160 );
+	//hook( change_skin_internal, ochange_skin_internal );
+	//hook( get_current_skin_id, oget_current_skin_id );
+	hook( modified_skin, omodified_skin );
 	hook( show_damage_4, options::reversed::i( )->ptr.damage_meter_func );
 	auto is_ok = hook( ReportProblem, options::reversed::i( )->ptr.func_crash );
 	Sleep( 5000 );

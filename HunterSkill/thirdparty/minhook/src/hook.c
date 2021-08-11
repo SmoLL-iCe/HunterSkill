@@ -330,9 +330,8 @@ EXTERN_C VOID Unfreeze(PFROZEN_THREADS pThreads)
             HANDLE hThread = OpenThread(THREAD_ACCESS, FALSE, pThreads->pItems[i]);
             if (hThread != NULL)
             {
-                ResumeThread(hThread);
-                ResumeThread(hThread);
-                ResumeThread(hThread);
+                while ( ResumeThread( hThread ) > 1 );
+
                 CloseHandle(hThread);
             }
         }
