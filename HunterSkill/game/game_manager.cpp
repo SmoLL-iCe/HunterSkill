@@ -2,11 +2,11 @@
 #include "shared_config.h"
 #include <map>
 #include "game_manager.h"
-#include "../utils/mem.h"
 #include "../interface/d3d11_impl.h"
 #include <vector>
 #include <sstream>
 #include "../thirdparty/minhook/include/MinHook.h"
+#include "Monster_names.hpp"
 
 game::manager* c_manager = nullptr;
 
@@ -134,94 +134,89 @@ void game::manager::update_entities( )
 
 	m_localplayer = reinterpret_cast<uintptr_t( __fastcall* )( uintptr_t )>( options::reversed::i( )->ptr.get_lp )( bs );
 
+	players[ 0 ].ptr = (c_entity*)m_localplayer;
 
 
 	if ( m_updated_list )
 		return;
 
-	if ( !m_instance_mgr ) return;
-
-	auto total_entity	= *r_cast<uint32_t*>( m_instance_mgr + options::reversed::i( )->offset.entity_max );
-
-	if ( !total_entity )
-		return;
-
-	auto entities_entry = *r_cast<uintptr_t**>( m_instance_mgr + options::reversed::i( )->offset.entities_entry );
-
-	if ( !entities_entry )
-		return;
-
-
 	auto player_vtable = *r_cast<uintptr_t*>( m_localplayer );
 
 	m_new_entities.clear( );
-	for ( auto i = 0UL; i < total_entity; ++i )
-	{
-		s_entity ent;
 
-		auto ptr	= entities_entry[ i ];
+
+	for ( auto player_index = 0; player_index < 4; player_index++ )
+	{
+		auto ptr = m_localplayer + ( options::reversed::i( )->offset.entity_size * player_index );
+
+		auto t_v = *r_cast<uintptr_t*>( ptr );
+
+		players[ player_index ].valid = player_vtable == t_v;
+
+		if ( players[ player_index ].valid )
+		{
+			auto entity						= r_cast<c_entity*>( ptr );
+
+			players[ player_index ].type_	= *r_cast<uint32_t*>( ptr + options::reversed::i( )->offset.weapon_type );
+
+			players[ player_index ].pos		= entity->get_pos( );
+
+			players[ player_index ].ptr		= entity;
+		}
+	}
+
+
+	auto inst = *(uintptr_t*)0x145073DB0;
+
+	auto total = *(DWORD*)( inst + 0x108 );
+	auto enty = *(uintptr_t**)( inst + 0x118 );
+	for ( size_t i = 0; i < total; i++ )
+	{
+		auto v23 = enty[ i ];
+		auto ptr = *(uintptr_t*)( v23 + 8 );
+
+		s_boss_entity ent;
 
 		if ( m_localplayer == ptr ) continue;
 
-		ent.ptr		= r_cast<c_entity*>( ptr );
+		ent.ptr = r_cast<c_entity*>( ptr );
 
-		if ( !ptr ) 
+		if ( !ptr )
 			continue;
 
-		if ( !mem::is_valid_read( ptr ) || !mem::is_valid_read( ptr + 0x7670 ) )
+		if ( !ent.ptr->is_valid() )
 			continue;
 
-		ent.is_player =  *r_cast<uintptr_t*>( ptr ) == player_vtable;
+		ent.pos = ent.ptr->get_pos( );
 
-		ent.pos	= ent.ptr->get_pos( );
-
-		ent.is_boss = ent.ptr->is_boss( );
-
-		if (!(	*r_cast< uint32_t*>( ptr + 0xC ) == 8 &&
-
-				*r_cast<  uint8_t*>( ptr + 0x14 ) & 1 &&
-
-			!( ~*r_cast<uintptr_t*>( m_instance_mgr + options::reversed::i( )->offset.mgr_flags1 ) & 
-
-				*r_cast<uintptr_t*>( ptr + 0x40 ) ) ))
-
+		if ( !ent.ptr->is_boss( ) )
 			continue;
 
-		if ( *r_cast<uint8_t*>( ptr + 0x561 ) )
-			continue;
-
-		if ( *r_cast<uintptr_t*>( ptr + 0x950 ) == 0ui64 )
-			continue;
-
-		if (!mem::is_valid_read(ptr + 0x7670))
-			continue;
-
-		auto sub = *r_cast<uintptr_t*>( ptr + 0x7670 );
-
-		if ( sub != 0 && mem::is_valid_read( sub + 0x60 ) && mem::is_valid_read(sub + 0x64))
+		if ( mem::is_valid_read( ptr + options::reversed::i( )->offset.string_file ) )
 		{
-			ent.health		= *r_cast<float*>( sub + 0x64 );
-			ent.max_health	= *r_cast<float*>( sub + 0x60 );		
-		}
-
-		if ( mem::is_valid_read( ptr + 0x5f28 ) )
-		{
-			auto ptr_str = *r_cast<uintptr_t*>(ptr + 0x5f28);
-			if ( ptr_str > ptr && ptr_str < (ptr + 0x8f28) )
+			auto ptr_str = *r_cast<uintptr_t*>( ptr + options::reversed::i( )->offset.string_file );
+			if ( ptr_str > ptr && ptr_str < ( ptr + options::reversed::i( )->offset.entity_size ) )
 			{
-				strcpy_s( ent.file, r_cast<char*>( ptr_str ) );
+				auto file = std::string( r_cast<char*>( ptr_str ) );
+
+				auto monster_name = getMonsterName( file );
+
+				if ( monster_name.empty( ) )
+					monster_name = file;
+
+
+				strcpy_s( ent.file, monster_name.data( ) );
 			}
 		}
 
-		if (ent.is_player)
-			ent.type_ = *r_cast<uint32_t*>(ptr + 0xECC4);
-		
+		ent.health = ent.ptr->get_health( );
 
+		ent.max_health = ent.ptr->get_max_health( );
 
-		if ( ent.is_boss )
+		//if ( ent.is_boss )
 		{
 			auto exist = false;
-			for (const auto boss : m_bosses )
+			for ( const auto& boss : m_bosses )
 			{
 				if ( boss.ptr == ent.ptr )
 				{
@@ -234,11 +229,15 @@ void game::manager::update_entities( )
 				m_bosses.push_back( ent );
 		}
 
-
 		m_new_entities.push_back( ent );
 	}
 
 	m_updated_list = true;
+}
+
+game::s_player* game::manager::get_players(int index )
+{
+	return &players[index];
 }
 
 byte game::manager::get_map()

@@ -3,6 +3,7 @@
 #include <iostream>
 #include <vector>
 #include "shared_config.h"
+#include "../utils/mem.h"
 
 struct vec3 final
 {
@@ -73,22 +74,56 @@ namespace game
 		{
 			return ( *reinterpret_cast<uintptr_t*>( uintptr_t( this ) + options::reversed::i( )->offset.is_boss ) == 0x1 );
 		}
+
+		bool is_valid( )
+		{
+			if ( !mem::is_valid_read( uintptr_t( this ) ) || !mem::is_valid_read( uintptr_t( this ) + options::reversed::i( )->offset.sub_to_health ) )
+				return false;
+			return *r_cast<uint32_t*>( uintptr_t( this ) + 0xC ) == 8 && *r_cast<uint8_t*>( uintptr_t( this ) + 0x14 ) & 1;
+		}
+
 		vec3 get_pos( )
 		{
 			return *reinterpret_cast<vec3*>( uintptr_t( this ) + options::reversed::i( )->offset.pos );
 		}
+
+		float get_health( )
+		{
+			auto sub = *r_cast<uintptr_t*>( uintptr_t( this ) + options::reversed::i( )->offset.sub_to_health );
+
+			if ( !sub )
+				return 0.f;
+
+			return *r_cast<float*>( sub + 0x64 );
+		}
+
+		float get_max_health( )
+		{
+			auto sub = *r_cast<uintptr_t*>( uintptr_t( this ) + options::reversed::i( )->offset.sub_to_health );
+
+			if ( !sub )
+				return 0.f;
+
+			return *r_cast<float*>( sub + 0x60 );
+		}
+
 	};
 
-	struct s_entity
+	struct s_boss_entity
 	{
-		bool is_boss = false;
-		bool is_player = false;
-		int type_ = -1;
-		float health = 0.f;
-		float max_health = 0.f;
+		c_entity* ptr		= nullptr;
+		float health		= 0.f;
+		float max_health	= 0.f;
 		vec3 pos{ };
-		c_entity* ptr = nullptr;
 		char file[ 100 ]{ };
+	};
+	struct s_player
+	{
+		int type_ = -1;
+		bool valid = false;
+		vec3 pos{ };
+		char name[ 100 ]{ };
+		c_entity* ptr = nullptr;
 
 	};
 	struct s_caused_damage

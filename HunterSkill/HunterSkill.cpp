@@ -7,10 +7,8 @@
 #include "game/game_manager.h"
 #include "utils/mem.h"
 #include "game/hunter_skin.h"
-
 #include "thirdparty/imgui/imgui.h"
 #include "game/hooks.h"
-#include "game/Monster_names.hpp"
 #include "thirdparty/minhook/include/MinHook.h"
 #include "interface/ImDraw.h"
 #include <iomanip>
@@ -268,7 +266,7 @@ void __stdcall overgay( )
             for ( auto& monster : game::manager::i( )->hunting_damage( ) )
             {
                 ImGuiWindowFlags  CollapsingHeader_flag = ImGuiTreeNodeFlags_DefaultOpen;
-                if ( ImGui::CollapsingHeader( getMonsterName( monster.name ).c_str( ), CollapsingHeader_flag ) )
+                if ( ImGui::CollapsingHeader( monster.name, CollapsingHeader_flag ) )
                 {
                     ImGui::Separator( );
                     if ( icon )
@@ -296,15 +294,16 @@ void __stdcall overgay( )
                     {
 
 
-                        int player_index = 0;
-                        uintptr_t size_player = 0x13F40;
-                        for ( ; player_index < 4; player_index++ )
+                        game::s_player* p = nullptr;
+                        for ( size_t x = 0; x < 4; x++ )
                         {
-                            if ( who_dam.entity == ( myplayer + ( size_player * player_index ) ) )
+                            if ( who_dam.entity == uintptr_t( game::manager::i( )->get_players( x )->ptr ) )
+                            {
+                                p = game::manager::i( )->get_players( x );
                                 break;
-
+                            }
                         }
-                        ++player_index;
+
                         ImGui::Separator( );
                         float mid = 0;
                         if ( icon )
@@ -312,8 +311,9 @@ void __stdcall overgay( )
                             ImGui::Image( r_cast<ImTextureID>( imgs[ who_dam.type ].ptr_handle_cpu_pos ), ImVec2( s_cast<float>( imgs[ who_dam.type ].width / 2 ), s_cast<float>( imgs[ who_dam.type ].height / 2 ) ) );
 
                         }
+                
                         ImGui::SameLine( 100 );
-                        ImGui::Text( "PLAYER%d", player_index );
+                        ImGui::Text( "%s",(p) ? p->name : " fail " );
                         ImGui::SameLine( 300 );
                         ImGui::TextColored( ( ImVec4( 0, 1, 0, 1 ) ), std::to_string( (int)who_dam.total_damage ).c_str( ) );
                         ImGui::SameLine( 450 );
@@ -531,33 +531,36 @@ void __stdcall overgay( )
         return;
     }
 
+    auto localplayer = game::manager::i( )->get_self_player( );
+
+    if ( localplayer )
+    {
+        vec3 out;
+        auto cor = ImVec4( 0.f, 1.f, 0.f, 1.f );
+        for ( auto player_index = 1; player_index < 4; player_index++ )
+        {
+            auto p = game::manager::i( )->get_players( player_index );
+            if ( !p->valid )
+                continue;
+
+
+            if ( !game::manager::i( )->w2s( p->pos, out ) )
+                return;
+
+            auto distance = localplayer->get_pos( ).distance( &p->pos );
+
+            std::ostringstream ss;
+            ss << p->name << ", distance [ " << std::dec << (int)distance << " ]\n";
+
+            ImGui::GetOverlayDrawList( )->AddText( ImVec2( out.x + 10, out.y + 30 ), ImGui::GetColorU32( cor ), ss.str( ).c_str( ) );
+        }
+    }
+
 
     game::manager::i( )->entity_callback(
-        []( game::s_entity entity ) -> void
+        []( game::s_boss_entity entity ) -> void
         {
             vec3 out;
-            auto cor = ImVec4( 1.f, 0.f, 0.f, 1.f );
-            if ( !entity.is_boss )
-            {
-                cor.x = 0.f; cor.y = 1.f;
-                if ( entity.is_player && show_player )
-                {
-
-                    if ( !game::manager::i( )->w2s( entity.pos, out ) )
-                        return;
-
-                    auto distance = game::manager::i( )->get_self_player( )->get_pos( ).distance( &entity.pos );
-
-                    std::ostringstream ss;
-                    ss << "PLAYER 0x" << std::hex << std::uppercase << entity.ptr << "\nDistance [ " << std::dec << distance << " ]\n";
-
-
-                    ImGui::GetOverlayDrawList( )->AddText( ImVec2( out.x + 10, out.y + 30 ),
-                        ImGui::GetColorU32( cor ), ss.str( ).c_str( ) );
-
-                }
-                return;
-            }
 
             if ( entity.health <= 0 || entity.max_health <= 0 )
                 return;
@@ -567,23 +570,22 @@ void __stdcall overgay( )
 
             auto distance = game::manager::i( )->get_self_player( )->get_pos( ).distance( &entity.pos );
 
-            auto file_monster = getMonsterName( entity.file );
-
-            if ( file_monster.empty( ) )
-                return;
 
             if ( distance > distance_max )
                 return;
 
             /// HUD GREAT MONSTER
             {
+                auto bar_size = 170;
+
+                out.x -= float( bar_size / 2.f ) + 10.f;
+
                 std::string hp_hud = " HP:" + std::to_string( (int)entity.health ) + "/" + std::to_string( (int)entity.max_health );
 
                 auto bg_height = 50.f + ( 20.f * ( int( show_distance ) + int( show_entry ) ) );
 
                 drawn_background( { out.x, out.y }, 15, { 210.f, bg_height } );
 
-                auto bar_size = 170;
 
                 auto now_x = out.x + 20;
                 auto now_y = out.y + 10;
@@ -598,7 +600,7 @@ void __stdcall overgay( )
 
 
                 now_y += 20;
-                draw::string( 18.f, ImVec2( now_x + ( bar_size / 2 ), now_y ), { 1, 1, 1, 1 }, true, true, file_monster.c_str( ) );
+                draw::string( 18.f, ImVec2( now_x + ( bar_size / 2 ), now_y ), { 1, 1, 1, 1 }, true, true, entity.file );
 
 
                 if ( show_distance )
@@ -669,7 +671,6 @@ int check_support( )
 
 
 
-
 int main( )
 {
 
@@ -696,19 +697,11 @@ int main( )
 
     hooks::init( );
 
-    //FROZEN_THREADS threads;
-    //Freeze( &threads, UINT_MAX, 1 );
-    //system( "pause" );
-    //Unfreeze( &threads );
-
     bool init_hunting = false;
-
-    //DWORD p;
-    //VirtualProtect( options::reversed::i( )->ptr.fix_skin, 1, PAGE_EXECUTE_READWRITE, &p );
 
     while ( true )
     {
-        Sleep( 100 );
+        Sleep( 1 );
 
         //if ( GetAsyncKeyState( VK_F5 ) & 0x8000 )
         //{
@@ -717,10 +710,11 @@ int main( )
         if ( GetAsyncKeyState( VK_F2 ) & 0x8000 )
             show_estatics = !show_estatics;
 
-        if ( GetAsyncKeyState( VK_F1 ) & 0x8000 )
-            winconfig = !winconfig;
-        // system("cls");
+        if ( GetAsyncKeyState( VK_F5 ) & 0x8000 )
+        {
 
+ 
+        }
 
         game::manager::i( )->clear_boss( );
 

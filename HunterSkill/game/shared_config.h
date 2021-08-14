@@ -26,6 +26,7 @@ namespace options
 		//=====================//=====================
 		struct c_ptr
 		{
+			//44 8B BE ? ? ? ? 41 83 EF 01  // process list boss
 			uint8_t* to_lp = U8PTR( 0x14506F1B0 );
 			uint8_t* get_lp = U8PTR( 0x141B56F80 );
 			uint8_t* to_inst_mgr = U8PTR( 0x145183E00 );
@@ -50,7 +51,12 @@ namespace options
 			uint32_t entity_flags3 = 0x40;
 			uint32_t mgr_flags1 = 0x4A48;
 
+			uint32_t entity_size = 0x13F40;
+			uint32_t weapon_type = 0xECC4;
+			uint32_t sub_to_health = 0x7670;
+			uint32_t string_file = 0x5f28;
 
+			//uint32_t pos = 0x390;
 			uint32_t pos = 0x160;
 		}offset;
 		//=====================//=====================

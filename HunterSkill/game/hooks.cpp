@@ -32,12 +32,12 @@ inline bool rem_hook( A1 r_original )
 
 void __fastcall ReportProblem( DWORD code, const char* str )
 {
-	if ( !code || code == 0x887A0001 )
-		return;
+	//if ( !code || code == 0x887A0001 )
+	//	return;
 
-	printf( "report problem, code: 0x%X\n", code );
+	//printf( "report problem, code: 0x%X\n", code );
 
-	return reinterpret_cast<decltype( ReportProblem )*>( options::reversed::i( )->ptr.func_crash )( code, str );
+	// return reinterpret_cast<decltype( ReportProblem )*>( options::reversed::i( )->ptr.func_crash )( code, str );
 }
 
 long __stdcall internal_handler( EXCEPTION_POINTERS* p_exception_info )
@@ -91,33 +91,6 @@ char __fastcall show_damage_4( __int64 pre_entity_target, __int64 whoCausedDamag
 	return reinterpret_cast<decltype( show_damage_4 )*>( options::reversed::i( )->ptr.damage_meter_func )( pre_entity_target, whoCausedDamage, damage_info );
 }
 
-//void* ochange_skin_internal = (void*)0x1419B3B20;
-//char* __fastcall change_skin_internal( char* a1, char feminine, unsigned int body_index, unsigned int skin_id ) 
-//{
-//	//skin_id = 0x1A4;
-//	auto ret = reinterpret_cast<decltype( change_skin_internal )*>( ochange_skin_internal )( a1, feminine, body_index, skin_id );
-//
-//
-//	auto p = game::manager::i( )->get_self_player( );
-//
-//	printf( " %d, %p\n",feminine, p );
-//	return ret;
-//
-//}
-//
-//
-//void* oget_current_skin_id = (void*)0x01419B3000;
-//__int64 __fastcall get_current_skin_id( __int64 ptr, unsigned int index )
-//{
-//	auto p = game::manager::i( )->get_self_player( );
-//	if ( __int64( p + 0x13690 ) == ptr )
-//		return 0x1A4;
-//
-//	auto skin_id = reinterpret_cast<decltype( get_current_skin_id )*>( oget_current_skin_id )( ptr, index );
-//
-//	return skin_id;
-//}
-
 void* omodified_skin = (void*)0x141265770;
 __int64 __fastcall modified_skin( __int64 ptr1, __int64 ptr2 )
 {
@@ -165,35 +138,74 @@ __int64 __fastcall modified_skin( __int64 ptr1, __int64 ptr2 )
 	}
 	else
 	{
-		auto val2 = *r_cast<uintptr_t*>( p + 0x13690 + 0xA0 ) == *r_cast<uintptr_t*>( ptr2 + 0xA0 );
-		if ( options::config::i( )->fix_skin &&  val2 )
+		auto ptr = p + 0x13690;
+		if ( mem::is_valid_read( ptr ) )
 		{
-			auto result = r_cast<uint32_t*>( &game::manager::i( )->current_skin );
-			for ( size_t i = 0; i < 5; i++ )
+			auto val2 = *r_cast<uintptr_t*>( ptr + 0xA0 ) == *r_cast<uintptr_t*>( ptr2 + 0xA0 );
+			if ( options::config::i( )->fix_skin && val2 )
 			{
-				if ( result[ i ] && result[ i ] != 0xFFFFFFFF )
+				auto result = r_cast<uint32_t*>( &game::manager::i( )->current_skin );
+				for ( size_t i = 0; i < 5; i++ )
 				{
-					*r_cast<uint32_t*>( ptr2 + 4 * i + 0xC4 ) = result[ i ];
-					*r_cast<uint32_t*>( p + 4 * i + 0x13690 + 0xC4 ) = result[ i ];
+					if ( result[ i ] && result[ i ] != 0xFFFFFFFF )
+					{
+						*r_cast<uint32_t*>( ptr2 + 4 * i + 0xC4 ) = result[ i ];
+						*r_cast<uint32_t*>( p + 4 * i + 0x13690 + 0xC4 ) = result[ i ];
 
 
+
+					}
+				}
+				auto anotherptr = *r_cast<uintptr_t*>( p + 0x14F8 );
+				if ( anotherptr )
+				{
+					*(BYTE*)( anotherptr + 0x4A45 ) = 1;
 
 				}
-			}
-			auto anotherptr = *r_cast<uintptr_t*>( p + 0x14F8 );
-			if ( anotherptr )
-			{
-				*(BYTE*)( anotherptr + 0x4A45 ) = 1;
-			
-			}
 
+			}
 		}
+
 	
 	
 	}
 
 	return reinterpret_cast<decltype( modified_skin )*>( omodified_skin )( ptr1, ptr2 );
 }
+
+void* EntityNames = (void*)0x0141E533F0;
+extern bool pronto;
+char __fastcall NearPlayerName( __int64 a1 )
+{
+	auto ret = reinterpret_cast<decltype( NearPlayerName )*>( EntityNames )( a1 );
+
+	auto p = game::manager::i( )->get_self_player( );
+
+	if ( p )
+	{
+		auto aa1		= *reinterpret_cast<uintptr_t*>( a1 + 0x40 );
+		auto a2			= *reinterpret_cast<char**>( a1 + 0x100 );
+		auto entity		= *reinterpret_cast<uintptr_t*>( a1 + 0x18 );
+
+		if ( aa1 && a2 )
+		{
+			for ( size_t i = 0; i < 4; i++ )
+			{
+				if ( uintptr_t( game::manager::i( )->get_players( i )->ptr ) == entity )
+				{
+					if ( *reinterpret_cast<uint32_t*>( game::manager::i( )->get_players( i )->name ) != *reinterpret_cast<uint32_t*>(a2) )
+						strcpy( game::manager::i( )->get_players( i )->name, a2 );
+		
+					break;
+				}
+			}
+		}
+	
+	}
+
+	return ret;
+}
+
 
 bool hooks::init( )
 {
@@ -226,6 +238,12 @@ bool hooks::init( )
 
 		//change_skin_internal
 		u8ptr( 0x14277A650 ),
+		u8ptr( 0x1427718D0 ),
+
+		//tmp
+		u8ptr( 0x1427879D0 ),
+		u8ptr( 0x142757A10 ),
+		u8ptr( 0x14277D550 ),
 	};
 
 	for ( auto* ptr : ac )
@@ -239,9 +257,8 @@ bool hooks::init( )
 
 	}
 
-	//return true;
-	//hook( change_skin_internal, ochange_skin_internal );
-	//hook( get_current_skin_id, oget_current_skin_id );
+
+	hook( NearPlayerName, EntityNames );
 	hook( modified_skin, omodified_skin );
 	hook( show_damage_4, options::reversed::i( )->ptr.damage_meter_func );
 	auto is_ok = hook( ReportProblem, options::reversed::i( )->ptr.func_crash );
