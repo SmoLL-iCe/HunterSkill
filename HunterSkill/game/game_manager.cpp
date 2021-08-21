@@ -84,8 +84,8 @@ void game::manager::entity_callback( entity_cb func )
 	if ( !func ) return;
 	if ( m_updated_list )
 	{
-		m_entities.clear( );
-		m_entities = m_new_entities;
+		//m_entities.clear( );
+		memcpy( m_entities, m_new_entities, sizeof( game::s_boss_entity ) * 3 );
 		m_updated_list = false;
 	}
 	for ( auto &entity : m_entities )
@@ -121,7 +121,7 @@ void game::manager::clear_boss( )
 {
 	if ( !game::manager::i( )->in_hunting( ) )
 	{
-		m_bosses.clear( );
+		//m_bosses.clear( );
 	}
 }
 
@@ -142,7 +142,7 @@ void game::manager::update_entities( )
 
 	auto player_vtable = *r_cast<uintptr_t*>( m_localplayer );
 
-	m_new_entities.clear( );
+	//m_new_entities.clear( );
 
 
 	for ( auto player_index = 0; player_index < 4; player_index++ )
@@ -167,10 +167,11 @@ void game::manager::update_entities( )
 
 
 	auto inst = *(uintptr_t*)0x145073DB0;
-
 	auto total = *(DWORD*)( inst + 0x108 );
 	auto enty = *(uintptr_t**)( inst + 0x118 );
-	for ( size_t i = 0; i < total; i++ )
+
+
+	for ( size_t i = 0, x = 0; i < total; i++ )
 	{
 		auto v23 = enty[ i ];
 		auto ptr = *(uintptr_t*)( v23 + 8 );
@@ -214,23 +215,24 @@ void game::manager::update_entities( )
 		ent.max_health = ent.ptr->get_max_health( );
 
 		//if ( ent.is_boss )
-		{
-			auto exist = false;
-			for ( const auto& boss : m_bosses )
-			{
-				if ( boss.ptr == ent.ptr )
-				{
-					exist = true;
-					break;
-				}
-			}
+		//{
+		//	auto exist = false;
+		//	for ( const auto& boss : m_bosses )
+		//	{
+		//		if ( boss.ptr == ent.ptr )
+		//		{
+		//			exist = true;
+		//			break;
+		//		}
+		//	}
 
-			if ( !exist )
-				m_bosses.push_back( ent );
-		}
+		//	if ( !exist )
+		//		m_bosses.push_back( ent );
+		//}
 
-		m_new_entities.push_back( ent );
+		m_new_entities[ x++ ] = ent;
 	}
+	memcpy( m_bosses, m_new_entities, sizeof( game::s_boss_entity ) * 3 );
 
 	m_updated_list = true;
 }
