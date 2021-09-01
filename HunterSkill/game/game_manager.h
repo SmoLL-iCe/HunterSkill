@@ -30,9 +30,9 @@ namespace game
 		uintptr_t m_instance_mgr = 0;
 		uintptr_t m_localplayer = 0;
 		game::s_player players[ 4 ];
-		game::s_boss_entity m_entities[ 3 ];
-		game::s_boss_entity m_new_entities[ 3 ];
-		game::s_boss_entity m_bosses[ 3 ];
+		std::vector<game::s_boss_entity> m_entities{ };
+		std::vector<game::s_boss_entity> m_new_entities{ };
+		std::vector<game::s_boss_entity> m_bosses{ };
 		std::vector<game::s_monster_damage> m_monster_damage{ };
 	};
 }
