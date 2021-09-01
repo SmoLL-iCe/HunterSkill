@@ -244,9 +244,6 @@ bool hooks::init( )
 		u8ptr( 0x1427879D0 ),
 		u8ptr( 0x142757A10 ),
 		u8ptr( 0x14277D550 ),
-
-		//names
-		u8ptr( 0x142768E90 ),
 	};
 
 	for ( auto* ptr : ac )
