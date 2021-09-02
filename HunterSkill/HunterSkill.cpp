@@ -669,8 +669,6 @@ int check_support( )
 
 
 
-
-
 int main( )
 {
 
@@ -713,6 +711,55 @@ int main( )
         if ( GetAsyncKeyState( VK_F5 ) & 0x8000 )
         {
 
+            printf( "f5\n" );
+            auto inst = *reinterpret_cast<uintptr_t*>( 0x14506D410 );
+            auto v28 = 0x80i64;
+            auto v29 = inst + 0x38;
+            auto v30 = 0i64;
+            //if ( inst + 0x38 > (unsigned __int64)( inst + 0x438 ) )
+                //v28 = 0i64;
+            //if ( inst + 0x38 <= (unsigned __int64)( inst + 0x438 ) )
+            {
+            
+                //for ( size_t j = 0; j < v28; j++ )
+                //{
+                //    auto v31 = *(uintptr_t*)v29;
+                //    v29 += 8i64;
+
+                //    if ( !v31 ) continue;
+
+
+                //    auto ENTITY = sub_140A197B0( v31 );
+
+                //    if ( !ENTITY ) continue;
+
+                //    auto ent_ptr = r_cast<game::c_entity*>( ENTITY );
+
+                //    if ( !ent_ptr )
+                //        continue;
+
+                //    if ( !ent_ptr->is_valid( ) )
+                //        continue;
+
+                //    if ( !ent_ptr->is_boss( ) )
+                //        continue;
+
+
+                //    printf( "ENTITY %p\n", ENTITY );
+                //}
+                //do
+                //{
+
+                //    auto v31 = *(uintptr_t*)v29;
+
+
+                //    
+
+
+                //    v29 += 8i64;
+                //    ++v30;
+                //} while ( v30 != v28 );
+            }
  
         }
 

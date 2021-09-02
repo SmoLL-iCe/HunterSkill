@@ -194,7 +194,7 @@ char __fastcall NearPlayerName( __int64 a1 )
 				if ( uintptr_t( game::manager::i( )->get_players( i )->ptr ) == entity )
 				{
 					if ( *reinterpret_cast<uint32_t*>( game::manager::i( )->get_players( i )->name ) != *reinterpret_cast<uint32_t*>(a2) )
-						strcpy( game::manager::i( )->get_players( i )->name, a2 );
+						strcpy_s( game::manager::i( )->get_players( i )->name, a2 );
 		
 					break;
 				}
@@ -244,6 +244,9 @@ bool hooks::init( )
 		u8ptr( 0x1427879D0 ),
 		u8ptr( 0x142757A10 ),
 		u8ptr( 0x14277D550 ),
+
+		//names
+		u8ptr( 0x142768E90 ),
 	};
 
 	for ( auto* ptr : ac )

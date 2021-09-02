@@ -84,7 +84,7 @@ std::string getMonsterName( std::string file_monster )
 
     if ( erease != std::string::npos ) file_monster = file_monster.substr( erease + 4 );
 
-    for ( const auto mh : monster_name )
+    for ( const auto &mh : monster_name )
     {
         size_t find = mh.find( file_monster );
         if ( find != std::string::npos )

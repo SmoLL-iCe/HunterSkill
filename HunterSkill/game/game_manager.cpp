@@ -84,8 +84,8 @@ void game::manager::entity_callback( entity_cb func )
 	if ( !func ) return;
 	if ( m_updated_list )
 	{
-		m_entities.clear( );
-		m_entities = m_new_entities;
+		//m_entities.clear( );
+		memcpy( m_entities, m_new_entities, sizeof( game::s_boss_entity ) * 3 );
 		m_updated_list = false;
 	}
 	for ( auto &entity : m_entities )
@@ -121,9 +121,25 @@ void game::manager::clear_boss( )
 {
 	if ( !game::manager::i( )->in_hunting( ) )
 	{
-		m_bosses.clear( );
+		//m_bosses.clear( );
 	}
 }
+
+__int64 __fastcall sub_140A197B0( __int64 a1 )
+{
+	__int64 result; // rax
+
+	result = *(uintptr_t*)( a1 + 0x138 );
+	if ( !result || !( *(BYTE*)( result + 12 ) & 0xE ) )
+		result = 0i64;
+	return result;
+}
+
+bool __fastcall sub_141BCA690( __int64 a1 )
+{
+	return *(DWORD*)( a1 + 0xA38 ) == 4;
+}
+
 
 void game::manager::update_entities( )
 {
@@ -142,7 +158,7 @@ void game::manager::update_entities( )
 
 	auto player_vtable = *r_cast<uintptr_t*>( m_localplayer );
 
-	m_new_entities.clear( );
+	//m_new_entities.clear( );
 
 
 	for ( auto player_index = 0; player_index < 4; player_index++ )
@@ -165,15 +181,23 @@ void game::manager::update_entities( )
 		}
 	}
 
+	auto inst = *reinterpret_cast<uintptr_t*>( 0x14506D410 );
+	auto v28 = 0x80i64;
+	auto v29 = inst + 0x38;
+	auto v30 = 0i64;
+	int x = 0;
 
-	auto inst = *(uintptr_t*)0x145073DB0;
-
-	auto total = *(DWORD*)( inst + 0x108 );
-	auto enty = *(uintptr_t**)( inst + 0x118 );
-	for ( size_t i = 0; i < total; i++ )
+	for ( size_t j = 0; j < v28; j++ )
 	{
-		auto v23 = enty[ i ];
-		auto ptr = *(uintptr_t*)( v23 + 8 );
+		auto v31 = *(uintptr_t*)v29;
+		v29 += 8i64;
+
+		if ( !v31 ) continue;
+
+
+		auto ENTITY = sub_140A197B0( v31 );
+
+		auto ptr = ENTITY;
 
 		s_boss_entity ent;
 
@@ -213,24 +237,79 @@ void game::manager::update_entities( )
 
 		ent.max_health = ent.ptr->get_max_health( );
 
-		//if ( ent.is_boss )
-		{
-			auto exist = false;
-			for ( const auto& boss : m_bosses )
-			{
-				if ( boss.ptr == ent.ptr )
-				{
-					exist = true;
-					break;
-				}
-			}
-
-			if ( !exist )
-				m_bosses.push_back( ent );
-		}
-
-		m_new_entities.push_back( ent );
+		m_new_entities[ x++ ] = ent;
 	}
+
+
+
+
+	//auto inst = *(uintptr_t*)0x145073DB0;
+	//auto total = *(DWORD*)( inst + 0x108 );
+	//auto enty = *(uintptr_t**)( inst + 0x118 );
+
+
+	//for ( size_t i = 0, x = 0; i < total; i++ )
+	//{
+	//	auto v23 = enty[ i ];
+	//	auto ptr = *(uintptr_t*)( v23 + 8 );
+
+	//	s_boss_entity ent;
+
+	//	if ( m_localplayer == ptr ) continue;
+
+	//	ent.ptr = r_cast<c_entity*>( ptr );
+
+	//	if ( !ptr )
+	//		continue;
+
+	//	if ( !ent.ptr->is_valid() )
+	//		continue;
+
+	//	ent.pos = ent.ptr->get_pos( );
+
+	//	if ( !ent.ptr->is_boss( ) )
+	//		continue;
+
+	//	if ( mem::is_valid_read( ptr + options::reversed::i( )->offset.string_file ) )
+	//	{
+	//		auto ptr_str = *r_cast<uintptr_t*>( ptr + options::reversed::i( )->offset.string_file );
+	//		if ( ptr_str > ptr && ptr_str < ( ptr + options::reversed::i( )->offset.entity_size ) )
+	//		{
+	//			auto file = std::string( r_cast<char*>( ptr_str ) );
+
+	//			auto monster_name = getMonsterName( file );
+
+	//			if ( monster_name.empty( ) )
+	//				monster_name = file;
+
+
+	//			strcpy_s( ent.file, monster_name.data( ) );
+	//		}
+	//	}
+
+	//	ent.health = ent.ptr->get_health( );
+
+	//	ent.max_health = ent.ptr->get_max_health( );
+
+	//	//if ( ent.is_boss )
+	//	//{
+	//	//	auto exist = false;
+	//	//	for ( const auto& boss : m_bosses )
+	//	//	{
+	//	//		if ( boss.ptr == ent.ptr )
+	//	//		{
+	//	//			exist = true;
+	//	//			break;
+	//	//		}
+	//	//	}
+
+	//	//	if ( !exist )
+	//	//		m_bosses.push_back( ent );
+	//	//}
+
+	//	m_new_entities[ x++ ] = ent;
+	//}
+	memcpy( m_bosses, m_new_entities, sizeof( game::s_boss_entity ) * 3 );
 
 	m_updated_list = true;
 }
